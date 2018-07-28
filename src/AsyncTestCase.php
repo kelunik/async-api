@@ -28,21 +28,11 @@ use PHPUnit\Framework\TestCase;
 abstract class AsyncTestCase extends TestCase
 {
     /**
-     * Create the task scheduler being used for a test.
-     * 
-     * The scheduler is re-created for every test to ensure proper test isolation.
-     */
-    protected function createTaskScheduler(): TaskScheduler
-    {
-        return new TaskScheduler();
-    }
-
-    /**
      * Run the test method in an isolated task scheduler.
      */
     protected function runTest()
     {
-        TaskScheduler::register($scheduler = $this->createTaskScheduler());
+        TaskScheduler::register($scheduler = new TaskScheduler());
         
         try {
             return parent::runTest();

@@ -65,3 +65,19 @@ function race(array $awaitables): Awaitable
     
     return Deferred::combine($awaitables, $race);
 }
+
+/**
+ * Resolves during the next tick of the internal event loop.
+ * 
+ * Can be used to ensure that other tasks and events can be processed.
+ */
+function tick($val = null): Awaitable
+{
+    $defer = new Deferred();
+    
+    Timer::tick(function () use ($defer, $val) {
+        $defer->resolve($val);
+    });
+    
+    return $defer->awaitable();
+}

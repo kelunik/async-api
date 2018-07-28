@@ -158,13 +158,8 @@ final class Task implements Awaitable
 /**
  * Provides scheduling and execution of async tasks.
  */
-class TaskScheduler implements \Countable
+final class TaskScheduler
 {
-    /**
-     * Get the number of currently scheduled tasks.
-     */
-    public final function count(): int { }
-    
     /**
      * Get an array containing all suspended tasks.
      */
@@ -192,32 +187,31 @@ class TaskScheduler implements \Countable
 }
 
 /**
- * Base class for a task scheduler that integrates with an event loop.
+ * Provides timers and future ticks backed by the internal event loop.
  */
-abstract class LoopTaskScheduler extends TaskScheduler
+final class Timer
 {
     /**
-     * Is called whenever the task scheduler enques the first task for execution.
+     * Create a new timer that will fire the passed callback.
      * 
-     * Use this method to schedule execution of the dispatch() method with your event loop.
+     * The timer is not enabled by default, you have to call start() to schedule it.
      */
-    protected abstract function activate(): void;
+    public function __construct(callable $callback) { }
     
     /**
-     * Starts the event loop and keeps it running until no more events can happen or the loop
-     * has been stopped.
+     * Starts (or restarts) the timer with the given delay.
      */
-    protected abstract function runLoop(): void;
+    public function start(int $milliseconds, bool $repeat = false): void { }
     
     /**
-     * Signal the running event loop to exit as soon as possible.
+     * Stops the timer if it is running.
      */
-    protected abstract function stopLoop(): void;
+    public function stop(): void { }
     
     /**
-     * Must be called to run all scheduled tasks until they are completed or suspended again.
+     * Schedule the given callback for execution during the next tick of the event loop.
      */
-    protected final function dispatch(): void { }
+    public static function tick(callable $callback): void { }
 }
 
 /**
