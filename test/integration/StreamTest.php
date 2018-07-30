@@ -21,20 +21,17 @@
 namespace Concurrent\Stream;
 
 use Concurrent\AsyncTestCase;
+use Concurrent\Task;
 use Concurrent\Timer;
+use function Concurrent\delay;
 
 class StreamTest extends AsyncTestCase
 {
-    protected function socketPair(): array
-    {
-        return \stream_socket_pair((DIRECTORY_SEPARATOR == '\\') ? \STREAM_PF_INET : \STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
-    }
-    
     public function testTimerBasedWrites()
     {
         $messages = str_split($message = 'Hello Socket :)', 4);
         
-        list ($a, $b) = $this->socketPair();
+        list ($a, $b) = Socket::pair();
         
         $timer = new Timer(static function (Timer $timer) use ($a, $messages) {
             static $i = 0;
@@ -61,6 +58,66 @@ class StreamTest extends AsyncTestCase
             $reader->close();
         }
         
+        $this->assertEquals($message, $received);
+    }
+    
+    public function provideSendReceiveSettings()
+    {
+        yield [70, false, false];
+        yield [70, true, false];
+        yield [70, false, true];
+        yield [70, true, true];
+        yield [7000, false, false];
+        yield [8192, false, false];
+        yield [8000 * 100, false, false];
+        yield [8000 * 100, true, false];
+        yield [8000 * 100, false, true];
+        yield [8000 * 100, true, true];
+    }
+
+    /**
+     * @dataProvider provideSendReceiveSettings
+     */
+    public function testSenderAndReceiver(int $size, bool $delayedSend, bool $delayedReceive)
+    {
+        $message = str_repeat('.', $size);
+        $received = '';
+        
+        list ($a, $b) = Socket::streamPair();
+        
+        $t = Task::async(function (WritableStream $socket) use ($message, $delayedSend) {
+            try {
+                foreach (str_split($message, 7000) as $chunk) {
+                    if ($delayedSend) {
+                        Task::await(delay(random_int(5, 35)));
+                    }
+                    
+                    $socket->write($chunk);
+                }
+            } finally {
+                $socket->close();
+            }
+            
+            return 'DONE';
+        }, $a);
+        
+        try {
+            if ($delayedReceive) {
+                Task::await(delay(random_int(5, 35)));
+            }
+            
+            while (null !== ($chunk = $b->read())) {
+                if ($delayedReceive) {
+                    Task::await(delay(random_int(5, 35)));
+                }
+                
+                $received .= $chunk;
+            }
+        } finally {
+            $b->close();
+        }
+        
+        $this->assertEquals('DONE', Task::await($t));
         $this->assertEquals($message, $received);
     }
 }

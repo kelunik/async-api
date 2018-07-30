@@ -1,0 +1,21 @@
+sudo: false
+
+language: php
+
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+
+matrix:
+  fast_finish: true
+  include:
+    - php: nightly
+
+install:
+  - travis_retry composer update -n $DEPS
+
+script:
+  - ./vendor/bin/phpunit -c ./test/phpunit.xml
+
+notifications:
+  email: false

@@ -45,7 +45,19 @@ class Reader implements ReadableStream
     
     public function close(?\Throwable $e = null): void
     {
-        $this->watcher->close($e);
+        if ($this->resource !== null) {
+            $meta = @\stream_get_meta_data($this->resource);
+            
+            if ($meta && \strpos($meta['mode'], '+') !== false) {
+                @\stream_socket_shutdown($this->resource, \STREAM_SHUT_RD);
+            } else {
+                @\fclose($this->resource);
+            }
+            
+            $this->resource = null;
+            
+            $this->watcher->close($e);
+        }
     }
 
     public function read(?int $length = null): ?string

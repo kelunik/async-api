@@ -43,6 +43,20 @@ class Writer implements WritableStream
     
     public function close(?\Throwable $e = null): void
     {
+        if ($this->resource !== null) {
+            $meta = @\stream_get_meta_data($this->resource);
+            
+            if ($meta && \strpos($meta['mode'], '+') !== false) {
+                @\stream_socket_shutdown($this->resource, \STREAM_SHUT_WR);
+            } else {
+                @\fclose($this->resource);
+            }
+            
+            $this->resource = null;
+            
+            $this->watcher->close($e);
+        }
+        
         $this->watcher->close($e);
     }
 

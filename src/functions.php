@@ -81,3 +81,19 @@ function tick($val = null): Awaitable
     
     return $defer->awaitable();
 }
+
+/**
+ * Resolves after the given delay.
+ */
+function delay(int $milliseconds, $val = null): Awaitable
+{
+    $defer = new Deferred();
+    
+    $timer = new Timer(function () use ($defer, $val) {
+        $defer->resolve($val);
+    });
+    
+    $timer->start($milliseconds);
+    
+    return $defer->awaitable();
+}
