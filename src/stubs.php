@@ -195,6 +195,8 @@ final class Timer
      * Create a new timer that will fire the passed callback.
      * 
      * The timer is not enabled by default, you have to call start() to schedule it.
+     * 
+     * The callback will receive the timer object as first argument.
      */
     public function __construct(callable $callback) { }
     
@@ -235,15 +237,11 @@ final class Watcher
     
     /**
      * Suspends the current task until the watched resource is reported as readable.
-     * 
-     * Must be called from within an async task!
      */
     public function awaitReadable(): void { }
     
     /**
      * Suspends the current task until the watched resource is reported as writable.
-     * 
-     * Must be called from within an async task!
      */
     public function awaitWritable(): void { }
 }
