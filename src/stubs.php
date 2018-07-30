@@ -215,6 +215,40 @@ final class Timer
 }
 
 /**
+ * Provides non-blocking IO integration.
+ */
+final class Watcher
+{
+    /**
+     * Create a stream watcher for the given resource.
+     * 
+     * @param resource $resource PHP stream or socket resource.
+     */
+    public function __construct($resource) { }
+    
+    /**
+     * Close the watcher, this will throw an error into all tasks waiting for readablility / writability.
+     * 
+     * @param \Throwable $e Optional reason that caused closing the watcher.
+     */
+    public function close(?\Throwable $e = null): void { }
+    
+    /**
+     * Suspends the current task until the watched resource is reported as readable.
+     * 
+     * Must be called from within an async task!
+     */
+    public function awaitReadable(): void { }
+    
+    /**
+     * Suspends the current task until the watched resource is reported as writable.
+     * 
+     * Must be called from within an async task!
+     */
+    public function awaitWritable(): void { }
+}
+
+/**
  * Exposes a callback-based fiber that requires explicit scheduling in userland.
  */
 final class Fiber
