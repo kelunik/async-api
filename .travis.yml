@@ -12,6 +12,7 @@ matrix:
     - php: nightly
 
 install:
+  - bash ./travis/async.sh
   - travis_retry composer update -n $DEPS
 
 script:
