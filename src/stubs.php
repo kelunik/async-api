@@ -31,6 +31,11 @@ interface Awaitable { }
 final class Context
 {
     /**
+     * Context cannot be created in userland.
+     */
+    private function __construct() { }
+    
+    /**
      * Derives a new context with a value bound to the given context var.
      */
     public function with(ContextVar $var, $value): Context { }
@@ -129,7 +134,12 @@ final class Deferred
  * A task is a fiber-based, concurrent VM execution, that can be paused and resumed.
  */
 final class Task implements Awaitable
-{   
+{
+    /**
+     * Task cannot be created in userland.
+     */
+    private function __construct() { }
+    
     /**
      * Check if the current execution is running in an async task.
      */
@@ -161,29 +171,24 @@ final class Task implements Awaitable
 final class TaskScheduler
 {
     /**
+     * Task scheduler cannot be created in userland.
+     */
+    private function __construct() { }
+    
+    /**
      * Get an array containing all suspended tasks.
      */
-    public final function getPendingTasks(): array { }
+    public function getPendingTasks(): array { }
     
     /**
-     * Runs the given callback as a task and returns the result.
+     * Runs the given callback as a task in an isolated scheduler and returns the result.
      */
-    public final function run(callable $callback, ...$args) { }
+    public static function run(callable $callback, ?callable $inspection = null) { }
     
     /**
-     * Runs the given callback as a task in the given context and returns the result.
+     * Runs the given callback as a task in the given context in an isolated scheduler and returns the result.
      */
-    public final function runWithContext(Context $context, callable $callback, ...$args) { }
-    
-    /**
-     * Push the given scheduler as default scheduler.
-     */
-    public static final function register(TaskScheduler $scheduler): void { }
-    
-    /**
-     * Pop the given scheduler if it is the active scheduler.
-     */
-    public static final function unregister(TaskScheduler $scheduler): void { }
+    public static function runWithContext(Context $context, callable $callback, ?callable $inspection = null) { }
 }
 
 /**

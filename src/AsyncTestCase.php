@@ -32,12 +32,8 @@ abstract class AsyncTestCase extends TestCase
      */
     protected function runTest()
     {
-        TaskScheduler::register($scheduler = new TaskScheduler());
-        
-        try {
+        return TaskScheduler::run(function () {
             return parent::runTest();
-        } finally {
-            TaskScheduler::unregister($scheduler);
-        }
+        });
     }
 }
