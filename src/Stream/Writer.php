@@ -32,6 +32,8 @@ class Writer implements WritableStream
     
     protected $buffer = '';
     
+    protected $writing = false;
+    
     public function __construct($resource, ?Watcher $watcher = null)
     {
         $this->resource = $resource;
@@ -56,13 +58,15 @@ class Writer implements WritableStream
             
             $this->watcher->close($e);
         }
-        
-        $this->watcher->close($e);
     }
 
     public function write(string $data): void
     {
         $retried = false;
+        
+        while ($this->writing) {
+            $this->watcher->awaitWritable();
+        }
         
         while ($data !== '') {
             if (!\is_resource($this->resource)) {
@@ -75,10 +79,23 @@ class Writer implements WritableStream
             
             if ($len > 0) {
                 $data = \substr($data, $len);
+                $retried = false;
             } elseif (@\feof($this->resource)) {
                 throw new StreamClosedException('Cannot write to closed stream');
             } else {
-                $this->watcher->awaitWritable();
+                if ($retried) {
+                    throw new StreamClosedException('Could not write bytes after retry, assuming broken pipe');
+                }
+                
+                $this->writing = true;
+                
+                try {
+                    $this->watcher->awaitWritable();
+                } finally {
+                    $this->writing = false;
+                }
+                
+                $retried = true;
             }
         }
     }

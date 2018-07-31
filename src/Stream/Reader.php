@@ -32,6 +32,8 @@ class Reader implements ReadableStream
     
     protected $buffer = '';
     
+    protected $reading = false;
+    
     public function __construct($resource, ?Watcher $watcher = null, int $bufferSize = 0x8000)
     {
         $this->resource = $resource;
@@ -66,6 +68,10 @@ class Reader implements ReadableStream
             $length = $this->bufferSize;
         }
         
+        while ($this->reading) {
+            $this->watcher->awaitReadable();
+        }
+        
         while ($this->buffer === '') {
             if (!\is_resource($this->resource)) {
                 throw new StreamClosedException('Cannot read from closed stream');
@@ -85,7 +91,13 @@ class Reader implements ReadableStream
                 return null;
             }
             
-            $this->watcher->awaitReadable();
+            $this->reading = true;
+            
+            try {
+                $this->watcher->awaitReadable();
+            } finally {
+                $this->reading = false;
+            }
         }
         
         $chunk = \substr($this->buffer, 0, $length);
