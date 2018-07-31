@@ -120,4 +120,21 @@ class StreamTest extends AsyncTestCase
         $this->assertEquals('DONE', Task::await($t));
         $this->assertEquals($message, $received);
     }
+    
+//     public function testSocket()
+//     {
+//         $socket = Socket::connect('tcp://google.com:80');
+        
+//         try {
+//             $socket->write(implode("\r\n", [
+//                 'GET / HTTP/1.0',
+//                 'Host: www.google.com',
+//                 'Connection: close'
+//             ]) . "\r\n\r\n");
+            
+//             var_dump($socket->read());
+//         } finally {
+//             $socket->close();
+//         }
+//     }
 }

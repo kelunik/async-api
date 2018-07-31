@@ -24,16 +24,24 @@ use Concurrent\Watcher;
 
 class Socket implements DuplexStream
 {
+    use ReaderTrait;
+    use WriterTrait;
+    
     protected const CONNECT_FLAGS = \STREAM_CLIENT_CONNECT | \STREAM_CLIENT_ASYNC_CONNECT;
     
-    protected $reader;
+    protected $resource;
 
-    protected $writer;
+    protected $watcher;
 
-    protected function __construct($socket, Watcher $watcher)
+    protected function __construct($socket, Watcher $watcher, int $bufferSize = 0x8000)
     {
-        $this->reader = new Reader($socket, $watcher);
-        $this->writer = new Writer($socket, $watcher);
+        $this->resource = $socket;
+        $this->watcher = $watcher;
+        $this->bufferSize = $bufferSize;
+        
+        \stream_set_blocking($socket, false);
+        \stream_set_read_buffer($socket, 0);
+        \stream_set_write_buffer($socket, 0);
     }
     
     public static function pair(): array
@@ -76,17 +84,11 @@ class Socket implements DuplexStream
 
     public function close(?\Throwable $e = null): void
     {
-        $this->reader->close($e);
-        $this->writer->close($e);
-    }
-
-    public function read(?int $length = null): ?string
-    {
-        return $this->reader->read($length);
-    }
-
-    public function write(string $data): void
-    {
-        $this->writer->write($data);
+        if (\is_resource($this->resource)) {
+            $this->closeReader($e);
+            $this->closeWriter($e);
+            
+            $this->resource = null;
+        }
     }
 }
