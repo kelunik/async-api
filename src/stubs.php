@@ -197,28 +197,19 @@ final class TaskScheduler
 final class Timer
 {
     /**
-     * Create a new timer that will fire the passed callback.
-     * 
-     * The timer is not enabled by default, you have to call start() to schedule it.
-     * 
-     * The callback will receive the timer object as first argument.
+     * Create a new timer with the given delay (in milliseconds).
      */
-    public function __construct(callable $callback) { }
-    
-    /**
-     * Starts (or restarts) the timer with the given delay.
-     */
-    public function start(int $milliseconds, bool $repeat = false): void { }
+    public function __construct(int $milliseconds) { }
     
     /**
      * Stops the timer if it is running.
      */
-    public function stop(): void { }
+    public function stop(?\Throwable $e = null): void { }
     
     /**
-     * Schedule the given callback for execution during the next tick of the event loop.
+     * Suspends the current task until the timer fires.
      */
-    public static function tick(callable $callback): void { }
+    public function awaitTimeout(): void { }
 }
 
 /**
@@ -238,7 +229,7 @@ final class Watcher
      * 
      * @param \Throwable $e Optional reason that caused closing the watcher.
      */
-    public function close(?\Throwable $e = null): void { }
+    public function stop(?\Throwable $e = null): void { }
     
     /**
      * Suspends the current task until the watched resource is reported as readable.

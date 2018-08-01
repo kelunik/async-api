@@ -34,7 +34,7 @@ trait WriterTrait
             @\fclose($this->resource);
         }
         
-        $this->watcher->close($e);
+        $this->watcher->stop($e);
     }
 
     public function write(string $data): void

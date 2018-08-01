@@ -23,7 +23,6 @@ namespace Concurrent\Stream;
 use Concurrent\AsyncTestCase;
 use Concurrent\Task;
 use Concurrent\Timer;
-use function Concurrent\delay;
 
 class StreamTest extends AsyncTestCase
 {
@@ -33,19 +32,20 @@ class StreamTest extends AsyncTestCase
         
         list ($a, $b) = Socket::pair();
         
-        $timer = new Timer(static function (Timer $timer) use ($a, $messages) {
-            static $i = 0;
+        Task::async(function () use ($a, $messages) {
+            $timer = new Timer(150);
+            $i = 0;
             
-            fwrite($a, $messages[$i++]);
-            
-            if (!isset($messages[$i])) {
+            try {
+                while (isset($messages[$i])) {
+                    $timer->awaitTimeout();
+                    
+                    fwrite($a, $messages[$i++]);
+                }
+            } finally {
                 fclose($a);
-                
-                $timer->stop();
             }
         });
-        
-        $timer->start(150, true);
         
         $reader = new Reader($b);
         $received = '';
@@ -86,10 +86,12 @@ class StreamTest extends AsyncTestCase
         list ($a, $b) = Socket::streamPair();
         
         $t = Task::async(function (WritableStream $socket) use ($message, $delayedSend) {
+            $timer = new Timer(10);
+            
             try {
                 foreach (str_split($message, 7000) as $chunk) {
                     if ($delayedSend) {
-                        Task::await(delay(random_int(5, 35)));
+                        $timer->awaitTimeout();
                     }
                     
                     $socket->write($chunk);
@@ -101,14 +103,16 @@ class StreamTest extends AsyncTestCase
             return 'DONE';
         }, $a);
         
+        $timer = new Timer(10);
+        
         try {
             if ($delayedReceive) {
-                Task::await(delay(random_int(5, 35)));
+                $timer->awaitTimeout();
             }
             
             while (null !== ($chunk = $b->read())) {
                 if ($delayedReceive) {
-                    Task::await(delay(random_int(5, 35)));
+                    $timer->awaitTimeout();
                 }
                 
                 $received .= $chunk;
@@ -128,7 +132,7 @@ class StreamTest extends AsyncTestCase
 //         try {
 //             $socket->write(implode("\r\n", [
 //                 'GET / HTTP/1.0',
-//                 'Host: www.google.com',
+//                 'Host: google.com',
 //                 'Connection: close'
 //             ]) . "\r\n\r\n");
             
