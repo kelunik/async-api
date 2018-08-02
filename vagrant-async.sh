@@ -43,7 +43,7 @@ sudo echo "alias phpgdb='gdb $(which php)'" >> ~/.bash_aliases
 
 # Install async extension:
 sudo mkdir ext-async
-sudo curl -LSs https://github.com/concurrent-php/ext-async/archive/loop.tar.gz | sudo tar -xz -C "ext-async" --strip-components 1
+sudo curl -LSs https://github.com/concurrent-php/ext-async/archive/master.tar.gz | sudo tar -xz -C "ext-async" --strip-components 1
 
 pushd ext-async
 sudo phpize
