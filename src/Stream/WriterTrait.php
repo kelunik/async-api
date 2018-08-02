@@ -42,7 +42,7 @@ trait WriterTrait
      */
     public function write(string $data): void
     {
-        $retried = false;
+        $retried = 0;
         
         while ($this->writing) {
             $this->watcher->awaitWritable();
@@ -59,12 +59,12 @@ trait WriterTrait
             
             if ($len > 0) {
                 $data = \substr($data, $len);
-                $retried = false;
+                $retried = 0;
             } elseif (@\feof($this->resource)) {
                 throw new StreamClosedException('Cannot write to closed stream');
             } else {
-                if ($retried) {
-                    throw new StreamClosedException('Could not write bytes after retry, assuming broken pipe');
+                if ($retried++ > 1) {
+                    throw new StreamClosedException(\sprintf('Could not write bytes after %u retries, assuming broken pipe', $retried));
                 }
                 
                 $this->writing = true;
@@ -74,8 +74,6 @@ trait WriterTrait
                 } finally {
                     $this->writing = false;
                 }
-                
-                $retried = true;
             }
         }
     }
