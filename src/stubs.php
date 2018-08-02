@@ -31,6 +31,11 @@ interface Awaitable { }
 final class Context
 {
     /**
+     * Context cannot be created in userland.
+     */
+    private function __construct() { }
+    
+    /**
      * Derives a new context with a value bound to the given context var.
      */
     public function with(ContextVar $var, $value): Context { }
@@ -129,7 +134,12 @@ final class Deferred
  * A task is a fiber-based, concurrent VM execution, that can be paused and resumed.
  */
 final class Task implements Awaitable
-{   
+{
+    /**
+     * Task cannot be created in userland.
+     */
+    private function __construct() { }
+    
     /**
      * Check if the current execution is running in an async task.
      */
@@ -158,66 +168,83 @@ final class Task implements Awaitable
 /**
  * Provides scheduling and execution of async tasks.
  */
-class TaskScheduler implements \Countable
+final class TaskScheduler
 {
     /**
-     * Get the number of currently scheduled tasks.
+     * Task scheduler cannot be created in userland.
      */
-    public final function count(): int { }
+    private function __construct() { }
     
     /**
-     * Get an array containing all suspended tasks.
+     * Runs the given callback as a task in an isolated scheduler and returns the result.
+     * 
+     * The inspect callback will be called after the callback-based task completes. It will receive an array
+     * of arrays containing information about every unfinished task.
      */
-    public final function getPendingTasks(): array { }
+    public static function run(callable $callback, ?callable $inspect = null) { }
     
     /**
-     * Runs the given callback as a task and returns the result.
+     * Runs the given callback as a task in the given context in an isolated scheduler and returns the result.
+     *
+     * The inspect callback will be called after the callback-based task completes. It will receive an array
+     * of arrays containing information about every unfinished task.
      */
-    public final function run(callable $callback, ...$args) { }
-    
-    /**
-     * Runs the given callback as a task in the given context and returns the result.
-     */
-    public final function runWithContext(Context $context, callable $callback, ...$args) { }
-    
-    /**
-     * Push the given scheduler as default scheduler.
-     */
-    public static final function register(TaskScheduler $scheduler): void { }
-    
-    /**
-     * Pop the given scheduler if it is the active scheduler.
-     */
-    public static final function unregister(TaskScheduler $scheduler): void { }
+    public static function runWithContext(Context $context, callable $callback, ?callable $inspect = null) { }
 }
 
 /**
- * Base class for a task scheduler that integrates with an event loop.
+ * Provides timers and future ticks backed by the internal event loop.
  */
-abstract class LoopTaskScheduler extends TaskScheduler
+final class Timer
 {
     /**
-     * Is called whenever the task scheduler enques the first task for execution.
+     * Create a new timer with the given delay (in milliseconds).
+     */
+    public function __construct(int $milliseconds) { }
+    
+    /**
+     * Stops the timer if it is running, this will dispose of all pending await operations.
      * 
-     * Use this method to schedule execution of the dispatch() method with your event loop.
+     * After a call to this method no further timeout operations will be possible.
      */
-    protected abstract function activate(): void;
+    public function close(?\Throwable $e = null): void { }
     
     /**
-     * Starts the event loop and keeps it running until no more events can happen or the loop
-     * has been stopped.
+     * Suspends the current task until the timer fires.
      */
-    protected abstract function runLoop(): void;
+    public function awaitTimeout(): void { }
+}
+
+/**
+ * Provides non-blocking IO integration.
+ */
+final class StreamWatcher
+{
+    /**
+     * Create a stream watcher for the given resource.
+     * 
+     * @param resource $resource PHP stream or socket resource.
+     */
+    public function __construct($resource) { }
     
     /**
-     * Signal the running event loop to exit as soon as possible.
+     * Close the watcher, this will throw an error into all tasks waiting for readablility / writability.
+     * 
+     * After a call to this method not further read / write operations can be awaited.
+     * 
+     * @param \Throwable $e Optional reason that caused closing the watcher.
      */
-    protected abstract function stopLoop(): void;
+    public function close(?\Throwable $e = null): void { }
     
     /**
-     * Must be called to run all scheduled tasks until they are completed or suspended again.
+     * Suspends the current task until the watched resource is reported as readable.
      */
-    protected final function dispatch(): void { }
+    public function awaitReadable(): void { }
+    
+    /**
+     * Suspends the current task until the watched resource is reported as writable.
+     */
+    public function awaitWritable(): void { }
 }
 
 /**

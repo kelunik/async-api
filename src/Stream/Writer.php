@@ -18,32 +18,39 @@
  +----------------------------------------------------------------------+
  */
 
-namespace Concurrent;
+namespace Concurrent\Stream;
 
-use PHPUnit\Framework\TestCase;
+use Concurrent\StreamWatcher;
 
-/**
- * Base class for tests that make use of async tasks.
- */
-abstract class AsyncTestCase extends TestCase
+class Writer implements WritableStream
 {
-    /**
-     * Run the test method in an isolated task scheduler.
-     */
-    protected function runTest()
+    use WriterTrait;
+    
+    protected $resource;
+    
+    protected $watcher;
+    
+    public function __construct($resource, ?StreamWatcher $watcher = null)
     {
-        return TaskScheduler::run(function () {
-            return parent::runTest();
-        }, \Closure::fromCallable([
-            $this,
-            'debugPendingAsyncTasks'
-        ]));
+        $this->resource = $resource;
+        $this->watcher = $watcher ?? new StreamWatcher($resource);
+        
+        if (!\stream_set_blocking($resource, false)) {
+            throw new \InvalidArgumentException('Cannot switch resource to non-blocking mode');
+        }
+        
+        \stream_set_write_buffer($resource, 0);
     }
-
+    
     /**
-     * Can be used to dump debug info about unfinished tasks created during a test.
-     * 
-     * @param array $tasks Each element contains info about an unfinished task.
+     * {@inheritdoc}
      */
-    protected function debugPendingAsyncTasks(array $tasks) { }
+    public function close(?\Throwable $e = null): void
+    {
+        if (\is_resource($this->resource)) {
+            $this->closeWriter($e);
+            
+            $this->resource = null;
+        }
+    }
 }

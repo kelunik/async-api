@@ -18,32 +18,38 @@
  +----------------------------------------------------------------------+
  */
 
-namespace Concurrent;
+namespace Concurrent\Stream;
 
-use PHPUnit\Framework\TestCase;
-
-/**
- * Base class for tests that make use of async tasks.
- */
-abstract class AsyncTestCase extends TestCase
+class WritableMemoryStream implements WritableStream
 {
-    /**
-     * Run the test method in an isolated task scheduler.
-     */
-    protected function runTest()
+    protected $buffer;
+    
+    protected $closed;
+    
+    public function getContents(): string
     {
-        return TaskScheduler::run(function () {
-            return parent::runTest();
-        }, \Closure::fromCallable([
-            $this,
-            'debugPendingAsyncTasks'
-        ]));
+        return $this->buffer;
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function close(?\Throwable $e = null): void
+    {
+        if ($this->closed === null) {
+            $this->closed = $e ?? true;
+        }
     }
 
     /**
-     * Can be used to dump debug info about unfinished tasks created during a test.
-     * 
-     * @param array $tasks Each element contains info about an unfinished task.
+     * {@inheritdoc}
      */
-    protected function debugPendingAsyncTasks(array $tasks) { }
+    public function write(string $data): void
+    {
+        if ($this->closed) {
+            throw new StreamClosedException('Cannot write to closed stream', 0, ($this->closed instanceof \Throwable) ? $this->closed : null);
+        }
+        
+        $this->buffer .= $data;
+    }
 }

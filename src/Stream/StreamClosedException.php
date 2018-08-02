@@ -18,32 +18,6 @@
  +----------------------------------------------------------------------+
  */
 
-namespace Concurrent;
+namespace Concurrent\Stream;
 
-use PHPUnit\Framework\TestCase;
-
-/**
- * Base class for tests that make use of async tasks.
- */
-abstract class AsyncTestCase extends TestCase
-{
-    /**
-     * Run the test method in an isolated task scheduler.
-     */
-    protected function runTest()
-    {
-        return TaskScheduler::run(function () {
-            return parent::runTest();
-        }, \Closure::fromCallable([
-            $this,
-            'debugPendingAsyncTasks'
-        ]));
-    }
-
-    /**
-     * Can be used to dump debug info about unfinished tasks created during a test.
-     * 
-     * @param array $tasks Each element contains info about an unfinished task.
-     */
-    protected function debugPendingAsyncTasks(array $tasks) { }
-}
+class StreamClosedException extends StreamException { }

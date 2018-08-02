@@ -18,32 +18,41 @@
  +----------------------------------------------------------------------+
  */
 
-namespace Concurrent;
+namespace Concurrent\Stream;
 
-use PHPUnit\Framework\TestCase;
-
-/**
- * Base class for tests that make use of async tasks.
- */
-abstract class AsyncTestCase extends TestCase
+class ReadableMemoryStream implements ReadableStream
 {
-    /**
-     * Run the test method in an isolated task scheduler.
-     */
-    protected function runTest()
+    protected $buffer;
+    
+    protected $closed = false;
+    
+    public function __construct(string $content = '')
     {
-        return TaskScheduler::run(function () {
-            return parent::runTest();
-        }, \Closure::fromCallable([
-            $this,
-            'debugPendingAsyncTasks'
-        ]));
+        $this->buffer = $buffer;
     }
 
     /**
-     * Can be used to dump debug info about unfinished tasks created during a test.
-     * 
-     * @param array $tasks Each element contains info about an unfinished task.
+     * {@inheritdoc}
      */
-    protected function debugPendingAsyncTasks(array $tasks) { }
+    public function close(?\Throwable $e = null): void
+    {
+        if ($this->closed === null) {
+            $this->closed = $e ?? true;
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function read(?int $length = null): ?string
+    {
+        if ($this->closed) {
+            throw new StreamClosedException('Cannot read from closed stream', 0, ($this->closed instanceof \Throwable) ? $this->closed : null);
+        }
+        
+        $chunk = \substr($this->buffer, $length ?? 0xFFFF);
+        $this->buffer = \substr($this->buffer, \strlen($chunk));
+        
+        return ($chunk === '') ? null : $chunk;
+    }
 }
