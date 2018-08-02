@@ -176,19 +176,20 @@ final class TaskScheduler
     private function __construct() { }
     
     /**
-     * Get an array containing all suspended tasks.
-     */
-    public function getPendingTasks(): array { }
-    
-    /**
      * Runs the given callback as a task in an isolated scheduler and returns the result.
+     * 
+     * The inspect callback will be called after the callback-based task completes. It will receive an array
+     * of arrays containing information about every unfinished task.
      */
-    public static function run(callable $callback, ?callable $inspection = null) { }
+    public static function run(callable $callback, ?callable $inspect = null) { }
     
     /**
      * Runs the given callback as a task in the given context in an isolated scheduler and returns the result.
+     *
+     * The inspect callback will be called after the callback-based task completes. It will receive an array
+     * of arrays containing information about every unfinished task.
      */
-    public static function runWithContext(Context $context, callable $callback, ?callable $inspection = null) { }
+    public static function runWithContext(Context $context, callable $callback, ?callable $inspect = null) { }
 }
 
 /**

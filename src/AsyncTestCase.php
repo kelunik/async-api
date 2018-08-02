@@ -34,6 +34,16 @@ abstract class AsyncTestCase extends TestCase
     {
         return TaskScheduler::run(function () {
             return parent::runTest();
-        });
+        }, \Closure::fromCallable([
+            $this,
+            'debugPendingAsyncTasks'
+        ]));
     }
+
+    /**
+     * Can be used to dump debug info about unfinished tasks created during a test.
+     * 
+     * @param array $tasks Each element contains info about an unfinished task.
+     */
+    protected function debugPendingAsyncTasks(array $tasks) { }
 }
