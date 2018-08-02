@@ -20,7 +20,7 @@
 
 namespace Concurrent\Stream;
 
-use Concurrent\Watcher;
+use Concurrent\StreamWatcher;
 
 class Socket implements DuplexStream
 {
@@ -33,13 +33,16 @@ class Socket implements DuplexStream
 
     protected $watcher;
 
-    protected function __construct($socket, Watcher $watcher, int $bufferSize = 0x8000)
+    protected function __construct($socket, StreamWatcher $watcher, int $bufferSize = 0x8000)
     {
         $this->resource = $socket;
         $this->watcher = $watcher;
         $this->bufferSize = $bufferSize;
         
-        \stream_set_blocking($socket, false);
+        if (!\stream_set_blocking($socket, false)) {
+            throw new \InvalidArgumentException('Cannot switch resource to non-blocking mode');
+        }
+        
         \stream_set_read_buffer($socket, 0);
         \stream_set_write_buffer($socket, 0);
     }
@@ -51,12 +54,9 @@ class Socket implements DuplexStream
 
     public static function streamPair(): array
     {
-        list ($a, $b) = static::pair();
-        
-        return [
-            new Socket($a, new Watcher($a)),
-            new Socket($b, new Watcher($b))
-        ];
+        return \array_map(function ($a) {
+            return new Socket($a, new StreamWatcher($a));
+        }, static::pair());
     }
     
     public static function connect(string $uri): Socket
@@ -70,7 +70,7 @@ class Socket implements DuplexStream
             throw new \RuntimeException(\sprintf('Failed connecting to "%s": [%s] %s', $uri, $errno, $errstr));
         }
         
-        $watcher = new Watcher($socket);
+        $watcher = new StreamWatcher($socket);
         $watcher->awaitWritable();
         
         if (false === @\stream_socket_get_name($socket, true)) {

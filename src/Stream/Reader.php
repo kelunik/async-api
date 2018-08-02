@@ -20,7 +20,7 @@
 
 namespace Concurrent\Stream;
 
-use Concurrent\Watcher;
+use Concurrent\StreamWatcher;
 
 class Reader implements ReadableStream
 {
@@ -30,13 +30,16 @@ class Reader implements ReadableStream
     
     protected $watcher;
     
-    public function __construct($resource, ?Watcher $watcher = null, int $bufferSize = 0x8000)
+    public function __construct($resource, ?StreamWatcher $watcher = null, int $bufferSize = 0x8000)
     {
         $this->resource = $resource;
-        $this->watcher = $watcher ?? new Watcher($resource);
+        $this->watcher = $watcher ?? new StreamWatcher($resource);
         $this->bufferSize = $bufferSize;
         
-        \stream_set_blocking($resource, false);
+        if (!\stream_set_blocking($resource, false)) {
+            throw new \InvalidArgumentException('Cannot switch resource to non-blocking mode');
+        }
+        
         \stream_set_read_buffer($resource, 0);
     }
     

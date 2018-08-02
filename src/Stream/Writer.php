@@ -20,7 +20,7 @@
 
 namespace Concurrent\Stream;
 
-use Concurrent\Watcher;
+use Concurrent\StreamWatcher;
 
 class Writer implements WritableStream
 {
@@ -30,12 +30,15 @@ class Writer implements WritableStream
     
     protected $watcher;
     
-    public function __construct($resource, ?Watcher $watcher = null)
+    public function __construct($resource, ?StreamWatcher $watcher = null)
     {
         $this->resource = $resource;
-        $this->watcher = $watcher ?? new Watcher($resource);
+        $this->watcher = $watcher ?? new StreamWatcher($resource);
         
-        \stream_set_blocking($resource, false);
+        if (!\stream_set_blocking($resource, false)) {
+            throw new \InvalidArgumentException('Cannot switch resource to non-blocking mode');
+        }
+        
         \stream_set_write_buffer($resource, 0);
     }
     

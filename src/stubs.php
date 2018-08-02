@@ -202,9 +202,11 @@ final class Timer
     public function __construct(int $milliseconds) { }
     
     /**
-     * Stops the timer if it is running.
+     * Stops the timer if it is running, this will dispose of all pending await operations.
+     * 
+     * After a call to this method no further timeout operations will be possible.
      */
-    public function stop(?\Throwable $e = null): void { }
+    public function close(?\Throwable $e = null): void { }
     
     /**
      * Suspends the current task until the timer fires.
@@ -215,7 +217,7 @@ final class Timer
 /**
  * Provides non-blocking IO integration.
  */
-final class Watcher
+final class StreamWatcher
 {
     /**
      * Create a stream watcher for the given resource.
@@ -227,9 +229,11 @@ final class Watcher
     /**
      * Close the watcher, this will throw an error into all tasks waiting for readablility / writability.
      * 
+     * After a call to this method not further read / write operations can be awaited.
+     * 
      * @param \Throwable $e Optional reason that caused closing the watcher.
      */
-    public function stop(?\Throwable $e = null): void { }
+    public function close(?\Throwable $e = null): void { }
     
     /**
      * Suspends the current task until the watched resource is reported as readable.

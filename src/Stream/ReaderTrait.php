@@ -38,7 +38,7 @@ trait ReaderTrait
             @\fclose($this->resource);
         }
         
-        $this->watcher->stop($e);
+        $this->watcher->close($e);
     }
 
     public function read(?int $length = null): ?string
