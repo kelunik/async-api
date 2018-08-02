@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 mkdir ext-async
-curl -LSs https://github.com/concurrent-php/ext-async/archive/master.tar.gz | sudo tar -xz -C "ext-async" --strip-components 1
+curl -LSs https://github.com/concurrent-php/ext-async/archive/master.tar.gz | tar -xz -C "ext-async" --strip-components 1
 
 pushd ext-async
 phpize
