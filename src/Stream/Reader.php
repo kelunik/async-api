@@ -43,6 +43,9 @@ class Reader implements ReadableStream
         \stream_set_read_buffer($resource, 0);
     }
     
+    /**
+     * {@inheritdoc}
+     */
     public function close(?\Throwable $e = null): void
     {
         if (\is_resource($this->resource)) {

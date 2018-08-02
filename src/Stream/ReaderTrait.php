@@ -41,6 +41,9 @@ trait ReaderTrait
         $this->watcher->close($e);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function read(?int $length = null): ?string
     {
         if ($length === null) {

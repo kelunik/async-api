@@ -31,6 +31,9 @@ class WritableMemoryStream implements WritableStream
         return $this->buffer;
     }
     
+    /**
+     * {@inheritdoc}
+     */
     public function close(?\Throwable $e = null): void
     {
         if ($this->closed === null) {
@@ -38,6 +41,9 @@ class WritableMemoryStream implements WritableStream
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function write(string $data): void
     {
         if ($this->closed) {

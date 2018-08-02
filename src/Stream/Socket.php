@@ -59,6 +59,12 @@ class Socket implements DuplexStream
         }, static::pair());
     }
     
+    /**
+     * Stablish an unencrypted socket connection to the given URL (tcp:// or unix://).
+     * 
+     * WARNING: This requires a DNS lookup if you pass a hostname instead of an IP address, non-blocking DNS
+     * is not available yet!
+     */
     public static function connect(string $uri): Socket
     {
         $errno = null;
@@ -82,6 +88,9 @@ class Socket implements DuplexStream
         return new Socket($socket, $watcher);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function close(?\Throwable $e = null): void
     {
         if (\is_resource($this->resource)) {

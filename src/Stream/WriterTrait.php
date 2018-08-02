@@ -37,6 +37,9 @@ trait WriterTrait
         $this->watcher->close($e);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function write(string $data): void
     {
         $retried = false;

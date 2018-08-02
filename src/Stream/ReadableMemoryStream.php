@@ -31,6 +31,9 @@ class ReadableMemoryStream implements ReadableStream
         $this->buffer = $buffer;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function close(?\Throwable $e = null): void
     {
         if ($this->closed === null) {
@@ -38,6 +41,9 @@ class ReadableMemoryStream implements ReadableStream
         }
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function read(?int $length = null): ?string
     {
         if ($this->closed) {
