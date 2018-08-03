@@ -38,18 +38,15 @@ class Socket implements DuplexStream
         $this->resource = $socket;
         $this->watcher = $watcher;
         $this->bufferSize = $bufferSize;
-        
-        if (!\stream_set_blocking($socket, false)) {
-            throw new \InvalidArgumentException('Cannot switch resource to non-blocking mode');
-        }
-        
-        \stream_set_read_buffer($socket, 0);
-        \stream_set_write_buffer($socket, 0);
     }
     
     public static function pair(): array
     {
-        return \stream_socket_pair((DIRECTORY_SEPARATOR == '\\') ? \STREAM_PF_INET : \STREAM_PF_UNIX, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP);
+        $domain = (DIRECTORY_SEPARATOR == '\\') ? \STREAM_PF_INET : \STREAM_PF_UNIX;
+        
+        return \array_map(function ($socket) {
+            return static::enableNonBlockingMode($socket);
+        }, \stream_socket_pair($domain, \STREAM_SOCK_STREAM, \STREAM_IPPROTO_IP));
     }
 
     public static function streamPair(): array
@@ -84,8 +81,7 @@ class Socket implements DuplexStream
                 $host = \trim(\implode(':', $parts), '][');
                 
                 if (false === \filter_var($host, \FILTER_VALIDATE_IP)) {
-                    $cb = \function_exists('Concurrent\gethostbyname') ? 'Concurrent\gethostbyname' : 'gethostbyname';
-                    $host = $cb($host);
+                    $host = \Concurrent\gethostbyname($host);
                 }
                 
                 $url = $protocol . '://' . $host . ':' . $port;
@@ -101,6 +97,8 @@ class Socket implements DuplexStream
         if ($socket === false) {
             throw new \RuntimeException(\sprintf('Failed connecting to "%s": [%s] %s', $url, $errno, $errstr));
         }
+        
+        $socket = static::enableNonBlockingMode($socket);
         
         $watcher = new StreamWatcher($socket);
         $watcher->awaitWritable();
@@ -125,5 +123,17 @@ class Socket implements DuplexStream
             
             $this->resource = null;
         }
+    }
+    
+    protected static function enableNonBlockingMode($socket)
+    {
+        if (!\stream_set_blocking($socket, false)) {
+            throw new \RuntimeException('Cannot switch resource to non-blocking mode');
+        }
+        
+        \stream_set_read_buffer($socket, 0);
+        \stream_set_write_buffer($socket, 0);
+        
+        return $socket;
     }
 }
