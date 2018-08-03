@@ -65,15 +65,41 @@ class Socket implements DuplexStream
      * WARNING: This requires a DNS lookup if you pass a hostname instead of an IP address, non-blocking DNS
      * is not available yet!
      */
-    public static function connect(string $uri): Socket
+    public static function connect(string $url): Socket
     {
+        $m = null;
+        
+        if (!\preg_match("'^([^:]+)://(.+)$'", $url, $m)) {
+            throw new \InvalidArgumentException(\sprintf('Invalid socket URL: "%s"', $url));
+        }
+        
+        $protocol = \strtolower($m[1]);
+        $host = $m[2];
+        
+        switch ($protocol) {
+            case 'tcp':
+            case 'udp':
+                $parts = \explode(':', $host);
+                $port = \array_pop($parts);
+                $host = \trim(\implode(':', $parts), '][');
+                
+                if (false === \filter_var($host, \FILTER_VALIDATE_IP)) {
+                    $cb = \function_exists('Concurrent\gethostbyname') ? 'Concurrent\gethostbyname' : 'gethostbyname';
+                    $host = $cb($host);
+                }
+                
+                $url = $protocol . '://' . $host . ':' . $port;
+                
+                break;
+        }
+        
         $errno = null;
         $errstr = null;
         
-        $socket = @\stream_socket_client($uri, $errno, $errstr, 0, self::CONNECT_FLAGS);
+        $socket = @\stream_socket_client($url, $errno, $errstr, 0, self::CONNECT_FLAGS);
         
         if ($socket === false) {
-            throw new \RuntimeException(\sprintf('Failed connecting to "%s": [%s] %s', $uri, $errno, $errstr));
+            throw new \RuntimeException(\sprintf('Failed connecting to "%s": [%s] %s', $url, $errno, $errstr));
         }
         
         $watcher = new StreamWatcher($socket);
@@ -82,7 +108,7 @@ class Socket implements DuplexStream
         if (false === @\stream_socket_get_name($socket, true)) {
             \fclose($socket);
             
-            throw new \RuntimeException(\sprintf('Connection to %s refused', $uri));
+            throw new \RuntimeException(\sprintf('Connection to %s refused', $url));
         }
         
         return new Socket($socket, $watcher);

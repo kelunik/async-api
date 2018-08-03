@@ -21,6 +21,13 @@
 namespace Concurrent;
 
 /**
+ * Async DNS name resolution (will be blocking if PHP SAPI is not cli or phpdbg for now).
+ * 
+ * @throws \Throwable When host name is invalid or no IP address could be resolved.
+ */
+function gethostbyname(string $host): string { }
+
+/**
  * Union of all awaitable objects (Deferred and Task) being used for type-hinting.
  */
 interface Awaitable { }
