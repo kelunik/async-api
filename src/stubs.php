@@ -255,6 +255,52 @@ final class StreamWatcher
 }
 
 /**
+ * Provides UNIX signal and Windows CTRL + C handling.
+ */
+final class SignalWatcher
+{
+    /**
+     * Console window has been closed.
+     */
+    public const SIGHUP = 1;
+    
+    /**
+     * Received CTRL + C keyboard interrupt.
+     */
+    public const SIGINT = 2;
+    
+    public const SIGQUIT = 3;
+    public const SIGKILL = 9;
+    public const SIGTERM = 15;
+    public const SIGUSR1 = 10;
+    public const SIGUSR2 = 12;
+    
+    /**
+     * Create a watcher for the given signal number.
+     */
+    public function __construct(int $signum) { }
+    
+    /**
+     * Close the watcher, this will throw an error into all tasks waiting for the signal.
+     * 
+     * After a call to this method not further signals can be awaited using this watcher.
+     * 
+     * @param \Throwable $e Optional reason that caused closing the watcher.
+     */
+    public function close(?\Throwable $e = null): void { }
+    
+    /**
+     * Suspend the current task until the signal is caught.
+     */
+    public function awaitSignal(): void { }
+    
+    /**
+     * Check handling the given signal is supported by the OS.
+     */
+    public static function isSupported(int $signum): bool { }
+}
+
+/**
  * Exposes a callback-based fiber that requires explicit scheduling in userland.
  */
 final class Fiber
