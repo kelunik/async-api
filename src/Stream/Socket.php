@@ -57,13 +57,25 @@ class Socket implements DuplexStream
     }
     
     /**
-     * Stablish an unencrypted socket connection to the given URL (tcp:// or unix://).
-     * 
-     * WARNING: This requires a DNS lookup if you pass a hostname instead of an IP address, non-blocking DNS
-     * is not available yet!
+     * Stablish an unencrypted socket connection to the given URL (supports tcp, tls, udp and unix protocols).
      */
-    public static function connect(string $url): Socket
+    public static function connect(string $url, array $options = []): Socket
     {
+        static $defaults = [
+            'ssl' => [
+                'allow_self_signed' => false,
+                'SNI_enabled' => true,
+                'crypto_method' => \STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT,
+                'reneg_limit' => 0,
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'verify_depth' => 10,
+                'ciphers' => \OPENSSL_DEFAULT_STREAM_CIPHERS,
+                'capture_peer_cert' => false,
+                'capture_peer_cert_chain' => false
+            ]
+        ];
+        
         $m = null;
         
         if (!\preg_match("'^([^:]+)://(.+)$'", $url, $m)) {
@@ -71,17 +83,28 @@ class Socket implements DuplexStream
         }
         
         $protocol = \strtolower($m[1]);
+        $encrypt = false;
         $host = $m[2];
         
         switch ($protocol) {
             case 'tcp':
             case 'udp':
+            case 'tls':
                 $parts = \explode(':', $host);
                 $port = \array_pop($parts);
                 $host = \trim(\implode(':', $parts), '][');
                 
+                if (null === ($options['ssl']['peer_name'] ?? null)) {
+                    $options['ssl']['peer_name'] = $host;
+                }
+                
                 if (false === \filter_var($host, \FILTER_VALIDATE_IP)) {
                     $host = \Concurrent\gethostbyname($host);
+                }
+                
+                if ($protocol == 'tls') {
+                    $encrypt = true;
+                    $protocol = 'tcp';
                 }
                 
                 $url = $protocol . '://' . $host . ':' . $port;
@@ -89,10 +112,17 @@ class Socket implements DuplexStream
                 break;
         }
         
+        // Merge options, ensure TLS compression is disabled to protect from CRIME attacks.
+        $ctx = \stream_context_create(\array_replace_recursive($defaults, $options, [
+            'ssl' => [
+                'disable_compression' => true
+            ]
+        ]));
+        
         $errno = null;
         $errstr = null;
         
-        $socket = @\stream_socket_client($url, $errno, $errstr, 0, self::CONNECT_FLAGS);
+        $socket = @\stream_socket_client($url, $errno, $errstr, 0, self::CONNECT_FLAGS, $ctx);
         
         if ($socket === false) {
             throw new \RuntimeException(\sprintf('Failed connecting to "%s": [%s] %s', $url, $errno, $errstr));
@@ -107,6 +137,20 @@ class Socket implements DuplexStream
             \fclose($socket);
             
             throw new \RuntimeException(\sprintf('Connection to %s refused', $url));
+        }
+        
+        while ($encrypt) {
+            $result = @\stream_socket_enable_crypto($socket, true);
+            
+            if ($result === true) {
+                break;
+            }
+            
+            if ($result === false) {
+                throw new \RuntimeException(\sprintf('Failed to enable socket encryption: %s', \error_get_last()['message'] ?? ''));
+            }
+            
+            $watcher->awaitReadable();
         }
         
         return new Socket($socket, $watcher);
