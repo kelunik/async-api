@@ -1,4 +1,5 @@
 /.buildpath
+/.phpunit*
 /.project
 /.settings
 /.vagrant

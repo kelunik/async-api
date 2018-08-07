@@ -33,7 +33,7 @@ class Socket implements DuplexStream
 
     protected $watcher;
 
-    protected function __construct($socket, StreamWatcher $watcher, int $bufferSize = 0x8000)
+    public function __construct($socket, StreamWatcher $watcher, int $bufferSize = 0x8000)
     {
         $this->resource = $socket;
         $this->watcher = $watcher;
@@ -169,7 +169,7 @@ class Socket implements DuplexStream
         }
     }
     
-    protected static function enableNonBlockingMode($socket)
+    public static function enableNonBlockingMode($socket)
     {
         if (!\stream_set_blocking($socket, false)) {
             throw new \RuntimeException('Cannot switch resource to non-blocking mode');
