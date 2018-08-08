@@ -43,9 +43,29 @@ final class Context
     private function __construct() { }
     
     /**
+     * Check if the context has been cancelled yet.
+     */
+    public function isCancelled(): bool { }
+    
+    /**
+     * Re-throw the error being used to cancel the context (does nothing if the context is alive).
+     */
+    public function throwIfCancelled(): void { }
+    
+    /**
      * Derives a new context with a value bound to the given context var.
      */
     public function with(ContextVar $var, $value): Context { }
+    
+    /**
+     * Automatically cancel the context after the given number of milliseconds have passed.
+     */
+    public function withTimeout(int $milliseconds): Context { }
+    
+    /**
+     * Create a context that is shielded from cancellation.
+     */
+    public function shield(): Context { }
     
     /**
      * Enables the context for the duration of the callback invocation, returns the
@@ -81,6 +101,27 @@ final class ContextVar
 }
 
 /**
+ * Provides access to a context that can be cancelled using the handler.
+ */
+final class CancellationHandler
+{
+    /**
+     * Derives the cancellable context from the given context (current context by default).
+     */
+    public function __construct(?Context $context = null) { }
+    
+    /**
+     * Get the cancellable context.
+     */
+    public function context(): Context { }
+    
+    /**
+     * Cancel the managed context, the given error will be set as previous error for the cancellation exception.
+     */
+    public function cancel(?\Throwable $e = null): void { }
+}
+
+/**
  * A deferred represents an async operation that may not have completed yet.
  * 
  * It exposes an awaitable to be consumed by other components and provides an API
@@ -88,6 +129,12 @@ final class ContextVar
  */
 final class Deferred
 {
+    /**
+     * Is used to enable support for cancellation. The callback will receive the deferred object
+     * and the cancellation error as arguments.
+     */
+    public function __construct(callable $cancel = null) { }
+    
     /**
      * Provides an awaitable object that can be resolved or failed by the deferred.
      */
