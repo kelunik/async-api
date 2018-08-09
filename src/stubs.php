@@ -43,16 +43,6 @@ final class Context
     private function __construct() { }
     
     /**
-     * Check if the context has been cancelled yet.
-     */
-    public function isCancelled(): bool { }
-    
-    /**
-     * Re-throw the error being used to cancel the context (does nothing if the context is alive).
-     */
-    public function throwIfCancelled(): void { }
-    
-    /**
      * Derives a new context with a value bound to the given context var.
      */
     public function with(ContextVar $var, $value): Context { }
@@ -68,6 +58,18 @@ final class Context
     public function shield(): Context { }
     
     /**
+     * Get a cancellation token for this context.
+     */
+    public function token(): CancellationToken { }
+    
+    /**
+     * Create a background (unreferenced) context.
+     * 
+     * The context will automatically be shielded from cancellation!
+     */
+    public function background(): Context { }
+    
+    /**
      * Enables the context for the duration of the callback invocation, returns the
      * value returned from the callback.
      * 
@@ -79,11 +81,6 @@ final class Context
      * Lookup the current logical execution context.
      */
     public static function current(): Context { }
-    
-    /**
-     * Lookup the background (= root) context.
-     */
-    public static function background(): Context { }
 }
 
 /**
@@ -119,6 +116,22 @@ final class CancellationHandler
      * Cancel the managed context, the given error will be set as previous error for the cancellation exception.
      */
     public function cancel(?\Throwable $e = null): void { }
+}
+
+/**
+ * Provides an API to check if a context has been cancelled.
+ */
+final class CancellationToken
+{
+    /**
+     * Check if the context has been cancelled yet.
+     */
+    public function isCancelled(): bool { }
+    
+    /**
+     * Re-throw the error being used to cancel the context (does nothing if the context is alive).
+     */
+    public function throwIfCancelled(): void { }
 }
 
 /**
