@@ -18,6 +18,17 @@
  +----------------------------------------------------------------------+
  */
 
-namespace Concurrent\Stream;
+namespace Concurrent;
 
-class StreamClosedException extends StreamException { }
+error_reporting(-1);
+ini_set('display_errors', '0');
+
+$host = \trim($_SERVER['argv'][1] ?? '');
+
+if ($host === '') {
+    echo "No host specified, pass it as command arg\n";
+    exit(1);
+}
+
+var_dump(gethostbyname($host));
+var_dump('DONE');

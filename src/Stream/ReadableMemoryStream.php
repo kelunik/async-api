@@ -26,7 +26,7 @@ class ReadableMemoryStream implements ReadableStream
     
     protected $closed = false;
     
-    public function __construct(string $content = '')
+    public function __construct(string $buffer = '')
     {
         $this->buffer = $buffer;
     }
