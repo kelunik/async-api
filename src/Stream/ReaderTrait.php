@@ -50,8 +50,8 @@ trait ReaderTrait
             $length = $this->bufferSize;
         }
         
-        while ($this->reading) {
-            $this->watcher->awaitReadable();
+        if ($this->reading) {
+            throw new PendingReadException('Cannot read from stream while another read is pending');
         }
         
         while ($this->buffer === '') {

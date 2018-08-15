@@ -493,6 +493,11 @@ namespace Concurrent\Stream
      * Is thrown when an operation is not allowed due to the stream being closed.
      */
     class StreamClosedException extends StreamException { }
+    
+    /**
+     * Is thrown when an attempt is made to read from a stream while another read is pending.
+     */
+    class PendingReadException extends StreamException { }
 }
 
 namespace Concurrent\Process
