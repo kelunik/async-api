@@ -24,20 +24,21 @@ use Concurrent\StreamWatcher;
 
 class Socket implements DuplexStream
 {
-    use ReaderTrait;
-    use WriterTrait;
-    
     protected const CONNECT_FLAGS = \STREAM_CLIENT_CONNECT | \STREAM_CLIENT_ASYNC_CONNECT;
     
-    protected $resource;
-
-    protected $watcher;
+    protected $reader;
+    
+    protected $writer;
 
     public function __construct($socket, StreamWatcher $watcher, int $bufferSize = 0x8000)
     {
-        $this->resource = $socket;
-        $this->watcher = $watcher;
-        $this->bufferSize = $bufferSize;
+        $this->reader = new Reader($socket, $watcher, $bufferSize);
+        $this->writer = new Writer($socket, $watcher);
+    }
+    
+    public function __destruct()
+    {
+        $this->close();
     }
     
     public static function pair(): array
@@ -156,19 +157,6 @@ class Socket implements DuplexStream
         return new Socket($socket, $watcher);
     }
 
-    /**
-     * {@inheritdoc}
-     */
-    public function close(?\Throwable $e = null): void
-    {
-        if (\is_resource($this->resource)) {
-            $this->closeReader($e);
-            $this->closeWriter($e);
-            
-            $this->resource = null;
-        }
-    }
-    
     public static function enableNonBlockingMode($socket)
     {
         if (!\stream_set_blocking($socket, false)) {
@@ -179,5 +167,34 @@ class Socket implements DuplexStream
         \stream_set_write_buffer($socket, 0);
         
         return $socket;
+    }
+    
+    /**
+     * {@inheritdoc}
+     */
+    public function close(?\Throwable $e = null): void
+    {
+        $this->reader->close($e);
+        $this->writer->close($e);
+    }
+    
+    public function read(?int $length = null): ?string
+    {
+        return $this->reader->read($length);
+    }
+    
+    public function readStream(): ReadableStream
+    {
+        return $this->reader;
+    }
+
+    public function write(string $data): void
+    {
+        $this->writer->write($data);
+    }
+    
+    public function writeStream(): WritableStream
+    {
+        return $this->writer;
     }
 }

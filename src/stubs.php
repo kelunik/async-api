@@ -456,7 +456,8 @@ namespace Concurrent\Stream
          * @param int $length Maximum number of bytes to be read (might return fewer bytes).
          * @return string|NULL Next chunk of data or null if EOF is reached.
          * 
-         * @throws StreamClosedException when the stream ahs been closed before or during the read operation.
+         * @throws StreamClosedException When the stream ahs been closed before or during the read operation.
+         * @throws PendingReadException When another read has not completed yet.
          */
         public function read(?int $length = null): ?string;
     }
@@ -482,7 +483,18 @@ namespace Concurrent\Stream
     /**
      * Union of read and write stream.
      */
-    interface DuplexStream extends ReadableStream, WritableStream { }
+    interface DuplexStream extends ReadableStream, WritableStream
+    {
+        /**
+         * Get a readable stream backed by the duplex stream.
+         */
+        public function readStream(): ReadableStream;
+        
+        /**
+         * Get a writable stream backed by the duplex stream.
+         */
+        public function writeStream(): WritableStream;
+    }
     
     /**
      * Is thrown due to an error during stream processing.
@@ -498,6 +510,102 @@ namespace Concurrent\Stream
      * Is thrown when an attempt is made to read from a stream while another read is pending.
      */
     class PendingReadException extends StreamException { }
+}
+
+namespace Concurrent\Network
+{
+    use Concurrent\Stream\DuplexStream;
+    use Concurrent\Stream\ReadableStream;
+    use Concurrent\Stream\WritableStream;
+    
+    /**
+     * TCP socket connection.
+     */
+    final class TcpSocket implements DuplexStream
+    {
+        /**
+         * Sockets are created using connect() or TcpServer::accept().
+         */
+        private function __construct() { }
+        
+        /**
+         * Connect to the given peer (will automatically perform a DNS lookup for host names).
+         */
+        public static function connect(string $host, int $port): TcpSocket { }
+        
+        /**
+         * Returns a pair of connected TCP sockets.
+         */
+        public static function pair(): array { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function close(?\Throwable $e = null): void { }
+        
+        /**
+         * Togle TCP nodelay mode.
+         */
+        public function nodelay(bool $enable): void { }
+        
+        /**
+         * Get IP address and port of the local peer.
+         */
+        public function getLocalPeer(): array { }
+        
+        /**
+         * Get IP address and port of the remote peer.
+         */
+        public function getRemotePeer(): array { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function read(?int $length = null): ?string { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function readStream(): ReadableStream { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function write(string $data): void { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function writeStream(): WritableStream { }
+    }
+    
+    /**
+     * TCP socket server.
+     */
+    final class TcpServer
+    {
+        /**
+         * Servers are created using listen().
+         */
+        private function __construct() { }
+        
+        /**
+         * Create a TCP server listening on the given interface and port.
+         */
+        public static function listen(string $host, int $port): TcpServer { }
+        
+        /**
+         * Dispose of the server.
+         * 
+         * @param \Throwable $e Reason for close.
+         */
+        public function close(?\Throwable $e = null): void { }
+        
+        /**
+         * Accept the next incoming client connection.
+         */
+        public function accept(): TcpSocket { }
+    }
 }
 
 namespace Concurrent\Process
@@ -610,6 +718,11 @@ namespace Concurrent\Process
      */
     final class Process
     {
+        /**
+         * Proccesses are created using ProcessBuilder::start().
+         */
+        private function __construct() { }
+        
         /**
          * Check if the process has terminated yet.
          */

@@ -21,26 +21,39 @@
 namespace Concurrent\Stream;
 
 use Concurrent\AsyncTestCase;
+use function Concurrent\gethostbyname;
+use Concurrent\Network\TcpSocket;
 
 class SocketTest extends AsyncTestCase
 {
     public function provideTargets()
     {
         yield [
-            'tcp://www.google.com:80'
+            'tcp://www.google.com:80',
+            false
         ];
         
         yield [
-            'tls://www.google.com:443'
+            'www.google.com:80',
+            true
+        ];
+        
+        yield [
+            'tls://www.google.com:443',
+            false
         ];
     }
 
     /**
      * @dataProvider provideTargets
      */
-    public function testSocket(string $url)
+    public function testSocket(string $url, bool $native)
     {
-        $socket = Socket::connect($url);
+        if ($native) {
+            $socket = TcpSocket::connect(...\explode(':', $url, 2));
+        } else {
+            $socket = Socket::connect($url);
+        }
         
         try {
             $socket->write(implode("\r\n", [
