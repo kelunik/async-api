@@ -20,17 +20,22 @@
 
 namespace Concurrent\Stream;
 
-class ReadableMemoryStream implements ReadableStream
+class ReadableInflateStream implements ReadableStream
 {
-    protected $buffer;
+    protected $stream;
+    
+    protected $context;
+    
+    protected $buffer = '';
     
     protected $closed;
     
-    public function __construct(string $buffer = '')
+    public function __construct(ReadableStream $stream, ?int $mode = null)
     {
-        $this->buffer = $buffer;
+        $this->stream = $stream;
+        $this->context = \inflate_init($mode ?? \ZLIB_ENCODING_GZIP);
     }
-
+    
     /**
      * {@inheritdoc}
      */
@@ -38,6 +43,8 @@ class ReadableMemoryStream implements ReadableStream
     {
         if ($this->closed === null) {
             $this->closed = $e ?? true;
+            
+            $this->stream->close($e);
         }
     }
 
@@ -47,12 +54,27 @@ class ReadableMemoryStream implements ReadableStream
     public function read(?int $length = null): ?string
     {
         if ($this->closed) {
-            throw new StreamClosedException('Cannot read from closed stream', 0, ($this->closed instanceof \Throwable) ? $this->closed : null);
+            throw new StreamClosedException('Cannot read from closed stream');
+        }
+        
+        if ($this->context === null) {
+            return null;
+        }
+        
+        while ($this->buffer === '' && $this->context !== null) {
+            $chunk = $this->stream->read(4096);
+            
+            if ($chunk === null) {
+                $this->buffer = \inflate_add($this->context, '', \ZLIB_FINISH);
+                $this->context = null;
+            } else {
+                $this->buffer = \inflate_add($this->context, $chunk, \ZLIB_SYNC_FLUSH);
+            }
         }
         
         $chunk = \substr($this->buffer, 0, $length ?? 0xFFFF);
         $this->buffer = \substr($this->buffer, \strlen($chunk));
         
-        return ($chunk === '') ? null : $chunk;
+        return $chunk;
     }
 }
