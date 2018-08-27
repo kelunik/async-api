@@ -45,8 +45,8 @@ $server = Server::listen('tcp://127.0.0.1:8080', function (Socket $socket) {
         throw new \RuntimeException('Invalid HTTP request line received');
     }
     
-    $method = $m[1];
-    $target = $m[2];
+//     $method = $m[1];
+//     $target = $m[2];
     $version = $m[3];
     
     var_dump($line);

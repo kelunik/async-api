@@ -24,7 +24,7 @@ use Concurrent\StreamWatcher;
 
 class Socket implements DuplexStream
 {
-    protected const CONNECT_FLAGS = \STREAM_CLIENT_CONNECT | \STREAM_CLIENT_ASYNC_CONNECT;
+    protected const CONNECT_FLAGS = STREAM_CLIENT_CONNECT | STREAM_CLIENT_ASYNC_CONNECT;
     
     protected $reader;
     

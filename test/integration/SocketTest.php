@@ -21,7 +21,7 @@
 namespace Concurrent\Stream;
 
 use Concurrent\AsyncTestCase;
-use function Concurrent\gethostbyname;
+use Concurrent\Network\ClientEncryption;
 use Concurrent\Network\TcpSocket;
 
 class SocketTest extends AsyncTestCase
@@ -29,18 +29,23 @@ class SocketTest extends AsyncTestCase
     public function provideTargets()
     {
         yield [
-            'tcp://www.google.com:80',
+            'tcp://httpbin.org:80',
             false
         ];
         
         yield [
-            'www.google.com:80',
+            'tcp://httpbin.org:80',
             true
         ];
         
         yield [
-            'tls://www.google.com:443',
+            'tls://httpbin.org:443',
             false
+        ];
+        
+        yield [
+            'tls://httpbin.org:443',
+            true
         ];
     }
 
@@ -50,18 +55,32 @@ class SocketTest extends AsyncTestCase
     public function testSocket(string $url, bool $native)
     {
         if ($native) {
-            $socket = TcpSocket::connect(...\explode(':', $url, 2));
+            list ($protocol, $host, $port) = \array_map(function (string $p) {
+                return \ltrim($p, '/');
+            }, \explode(':', $url, 3));
+
+            if ($protocol == 'tcp') {
+                $encryption = null;
+            } else {
+                $encryption = new ClientEncryption();
+            }
+
+            $socket = TcpSocket::connect($host, $port, $encryption);
+
+            if ($encryption) {
+                $socket->encrypt();
+            }
         } else {
             $socket = Socket::connect($url);
         }
-        
+
         try {
             $socket->write(implode("\r\n", [
-                'GET / HTTP/1.0',
-                'Host: www.google.com',
+                'GET /json HTTP/1.0',
+                'Host: httpbin.org',
                 'Connection: close'
             ]) . "\r\n\r\n");
-            
+
             $buffer = '';
             
             while (null !== ($chunk = $socket->read())) {
@@ -72,10 +91,13 @@ class SocketTest extends AsyncTestCase
             $headers = \explode("\r\n", $headers);
             $line = \array_shift($headers);
             $m = null;
-            
+
             $this->assertEquals(1, \preg_match("'^HTTP/(?<version>1\\.[01])\s+(?<status>[0-9]{3})(.*)$'i", $line, $m));
-            $this->assertEquals('1.0', $m['version']);
             $this->assertEquals(200, $m['status']);
+            
+            $data = \json_decode($data, true);
+            
+            $this->assertEquals('Sample Slide Show', $data['slideshow']['title']);
         } finally {
             $socket->close();
         }

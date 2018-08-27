@@ -32,7 +32,7 @@ class Server
     protected function __construct($server, callable $handler, bool $encrypt, array $options)
     {
         $this->server = $server;
-        $this->watcher = $watcher = new StreamWatcher($server);
+        $this->watcher = new StreamWatcher($server);
         
         Task::async(function () use ($handler, $encrypt, $options) {
             while (true) {
