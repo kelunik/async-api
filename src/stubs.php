@@ -531,7 +531,7 @@ namespace Concurrent\Network
         /**
          * Connect to the given peer (will automatically perform a DNS lookup for host names).
          */
-        public static function connect(string $host, int $port): TcpSocket { }
+        public static function connect(string $host, int $port, ?ClientEncryption $encryption = null): TcpSocket { }
         
         /**
          * Returns a pair of connected TCP sockets.
@@ -557,6 +557,11 @@ namespace Concurrent\Network
          * Get IP address and port of the remote peer.
          */
         public function getRemotePeer(): array { }
+        
+        /**
+         * Negotiate connection encryption, any further data transfer is encrypted.
+         */
+        public function encrypt(): void { }
         
         /**
          * {@inheritdoc}
@@ -592,7 +597,7 @@ namespace Concurrent\Network
         /**
          * Create a TCP server listening on the given interface and port.
          */
-        public static function listen(string $host, int $port): TcpServer { }
+        public static function listen(string $host, int $port, ?ServerEncryption $encryption = null): TcpServer { }
         
         /**
          * Dispose of the server.
@@ -602,9 +607,55 @@ namespace Concurrent\Network
         public function close(?\Throwable $e = null): void { }
         
         /**
+         * Get the host as specified during server creation.
+         */
+        public function getHost(): string { }
+        
+        /**
+         * Get the port as specified during server creation.
+         */
+        public function getPort(): int { }
+        
+        /**
+         * Get IP address and port of the local server socket.
+         */
+        public function getPeer(): array { }
+        
+        /**
          * Accept the next incoming client connection.
          */
         public function accept(): TcpSocket { }
+    }
+    
+    /**
+     * Socket client encryption settings.
+     */
+    final class ClientEncryption
+    {
+        /**
+         * Allow connecting to hosts that have a self-signed X509 certificate.
+         */
+        public function withAllowSelfSigned(bool $allow): self { }
+        
+        /**
+         * Set peer name to connect to.
+         */
+        public function withPeerName(string $name): self { }
+    }
+    
+    /**
+     * Socket server encryption settings.
+     */
+    final class ServerEncryption
+    {
+        /**
+         * Configure the default X509 certificate to be used by the server.
+         * 
+         * @param string $cert Path to the certificate file.
+         * @param string $key Path to the secret key file.
+         * @param string $passphrase Passphrase being used to access the secret key.
+         */
+        public function withDefaultCertificate(string $cert, string $key, ?string $passphrase = null): self { }
     }
 }
 
