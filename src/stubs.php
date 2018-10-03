@@ -638,6 +638,11 @@ namespace Concurrent\Network
         public function withAllowSelfSigned(bool $allow): self { }
         
         /**
+         * Restrict the maximum certificate validation chain to the given length.
+         */
+        public function withVerifyDepth(int $depth): self { }
+        
+        /**
          * Set peer name to connect to.
          */
         public function withPeerName(string $name): self { }
