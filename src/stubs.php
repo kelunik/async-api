@@ -546,7 +546,7 @@ namespace Concurrent\Network
         /**
          * Togle TCP nodelay mode.
          */
-        public function nodelay(bool $enable): void { }
+        public function setNodelay(bool $enable): void { }
         
         /**
          * Get IP address and port of the local peer.
