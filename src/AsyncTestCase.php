@@ -32,12 +32,10 @@ abstract class AsyncTestCase extends TestCase
      */
     protected function runTest()
     {
-        return TaskScheduler::run(function () {
-            return parent::runTest();
-        }, \Closure::fromCallable([
-            $this,
-            'debugPendingAsyncTasks'
-        ]));
+        return TaskScheduler::run(
+            \Closure::fromCallable('parent::runTest'),
+            \Closure::fromCallable([$this, 'debugPendingAsyncTasks'])
+        );
     }
 
     /**
