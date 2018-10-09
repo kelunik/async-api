@@ -48,18 +48,15 @@ function all(array $awaitables): Awaitable
 }
 
 /**
- * Resolves with the value of the first succesful resolution of an input awaitable.
- * 
- * Requires at least one input awaitable, the first resolved value will be forwarded. The combinator
- * will fail if all input awaitables have failed.
+ * Resolves with the value or error of the first input awaitable that resolves.
  */
 function race(array $awaitables): Awaitable
 {
     $race = function (Deferred $defer, $last, $k, $e, $v) {
-        if ($e === null) {
+        if ($e) {
+            $defer->fail($e);
+        } else {
             $defer->resolve($v);
-        } elseif ($last) {
-            $defer->fail(new \RuntimeException('None of the awaitables resolved'));
         }
     };
     
