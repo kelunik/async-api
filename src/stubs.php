@@ -635,17 +635,17 @@ namespace Concurrent\Network
         /**
          * Allow connecting to hosts that have a self-signed X509 certificate.
          */
-        public function withAllowSelfSigned(bool $allow): self { }
+        public function withAllowSelfSigned(bool $allow): ClientEncryption { }
         
         /**
          * Restrict the maximum certificate validation chain to the given length.
          */
-        public function withVerifyDepth(int $depth): self { }
+        public function withVerifyDepth(int $depth): ClientEncryption { }
         
         /**
          * Set peer name to connect to.
          */
-        public function withPeerName(string $name): self { }
+        public function withPeerName(string $name): ClientEncryption { }
     }
     
     /**
@@ -660,7 +660,124 @@ namespace Concurrent\Network
          * @param string $key Path to the secret key file.
          * @param string $passphrase Passphrase being used to access the secret key.
          */
-        public function withDefaultCertificate(string $cert, string $key, ?string $passphrase = null): self { }
+        public function withDefaultCertificate(string $cert, string $key, ?string $passphrase = null): ServerEncryption { }
+        
+        /**
+         * Configure a host-based X509 certificate to be used by the server.
+         * 
+         * @param string $host Hostname.
+         * @param string $cert Path to the certificate file.
+         * @param string $key Path to the secret key file.
+         * @param string $passphrase Passphrase being used to access the secret key.
+         */
+        public function withCertificate(string $host, string $cert, string $key, ?string $passphrase = null): ServerEncryption { }
+    }
+    
+    /**
+     * UDP socket API.
+     */
+    final class UdpSocket
+    {
+        /**
+         * Bind a UDP socket to the given local peer.
+         * 
+         * @param string $address Local network interface address (IP) to be used.
+         * @param int $port Local port to be used.
+         */
+        public static function bind(string $address, int $port): UdpSocket { }
+        
+        /**
+         * Bind a UDP socket and join the given UDP multicast group.
+         * 
+         * @param string $group Address (IP) of the UDP multicast group.
+         * @param int $port Port being used by the UDP multicast group.
+         */
+        public static function multicast(string $group, int $port): UdpSocket { }
+        
+        /**
+         * Close the UDP socket.
+         * 
+         * @param \Throwable $e Reason for close.
+         */
+        public function close(?\Throwable $e = null): void { }
+        
+        /**
+         * Get the local IP address being used by the UDP socket.
+         */
+        public function getHost(): string { }
+        
+        /**
+         * Get the local port being used by the UDP socket.
+         */
+        public function getPort(): int { }
+
+        /**
+         * Get an array containing local IP address and port of the UDP socket.
+         */
+        public function getPeer(): array { }
+        
+        /**
+         * Receive the next UDP datagram from the socket.
+         */
+        public function receive(): UdpDatagram { }
+
+        /**
+         * Transmit the given UDP datagram over the network.
+         * 
+         * @param UdpDatagram $datagram UDP datagram with payload and remote peer address.
+         */
+        public function send(UdpDatagram $datagram): void { }
+    }
+    
+    /**
+     * Wrapper for a UDP datagram.
+     */
+    final class UdpDatagram
+    {
+        /**
+         * Transmitted data payload.
+         * 
+         * @var string
+         */
+        public $data;
+        
+        /**
+         * IP address of the remote peer.
+         * 
+         * @var string
+         */
+        public $address;
+        
+        /**
+         * Port being used by the remote peer.
+         * 
+         * @var int
+         */
+        public $port;
+        
+        /**
+         * Create a new UDP datagram.
+         * 
+         * @param string $data Payload to be transmitted.
+         * @param string $address IP address of the remote peer.
+         * @param int $port Port being used by the remote peer.
+         */
+        public function __construct(string $data, string $address, int $port) { }
+        
+        /**
+         * Create a UDP datagram with the same remote peer.
+         * 
+         * @param string $data Data to be transmitted.
+         */
+        public function withData(string $data): UdpDatagram { }
+
+        /**
+         * Create a datagram with the same transmitted data.
+         * 
+         * @param string $address IP address of the remote peer.
+         * @param int $port Port being used by the remote peer.
+         */
+        public function withPeer(string $address, int $port): UdpDatagram { }
     }
 }
 
