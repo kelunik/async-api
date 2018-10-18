@@ -26,6 +26,11 @@ class WritableMemoryStream implements WritableStream
     
     protected $closed;
     
+    public function isClosed(): bool
+    {
+        return $this->closed !== null;
+    }
+    
     public function getContents(): string
     {
         return $this->buffer;

@@ -65,19 +65,9 @@ class CompressionTest extends AsyncTestCase
     public function testCombination()
     {
         $data = random_bytes(8192 * 100);
-        
+
         $stream = new ReadableInflateStream(new ReadableDeflateStream(new ReadableMemoryStream($data)));
-        
-        try {
-            $buffer = '';
-            
-            while (null !== ($chunk = $stream->read())) {
-                $buffer .= $chunk;
-            }
-        } finally {
-            $stream->close();
-        }
-        
-        $this->assertEquals($data, $buffer);
+
+        $this->assertEquals($data, buffer($stream));
     }
 }

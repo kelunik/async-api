@@ -18,47 +18,101 @@
  +----------------------------------------------------------------------+
  */
 
-namespace Concurrent;
-
-/**
- * Resolve when all input awaitables have been resolved.
- * 
- * Requires at least one input awaitable, resolves with an array containing all resolved values. The order and
- * keys of the input array are preserved in the result array.
- * 
- * The combinator will fail if any input awaitable fails.
- */
-function all(array $awaitables): Awaitable
+namespace Concurrent
 {
-    $result = \array_fill_keys(\array_keys($awaitables), null);
-    
-    $all = function (Deferred $defer, $last, $k, $e, $v) use (& $result) {
-        if ($e) {
-            $defer->fail($e);
-        } else {
-            $result[$k] = $v;
-            
-            if ($last) {
-                $defer->resolve($result);
+    /**
+     * Resolve when all input awaitables have been resolved.
+     * 
+     * Requires at least one input awaitable, resolves with an array containing all resolved values. The order and
+     * keys of the input array are preserved in the result array.
+     * 
+     * The combinator will fail if any input awaitable fails.
+     */
+    function all(array $awaitables): Awaitable
+    {
+        $result = \array_fill_keys(\array_keys($awaitables), null);
+
+        $all = function (Deferred $defer, bool $last, $k, ?\Throwable $e, $v = null) use (& $result) {
+            if ($e) {
+                $defer->fail($e);
+            } else {
+                $result[$k] = $v;
+
+                if ($last) {
+                    $defer->resolve($result);
+                }
             }
-        }
-    };
-    
-    return Deferred::combine($awaitables, $all);
+        };
+
+        return Deferred::combine($awaitables, $all);
+    }
+
+    /**
+     * Resolves with the value or error of the first input awaitable that resolves.
+     */
+    function race(array $awaitables): Awaitable
+    {
+        $race = function (Deferred $defer, bool $last, $k, ?\Throwable $e, $v = null) {
+            if ($e) {
+                $defer->fail($e);
+            } else {
+                $defer->resolve($v);
+            }
+        };
+
+        return Deferred::combine($awaitables, $race);
+    }
 }
 
-/**
- * Resolves with the value or error of the first input awaitable that resolves.
- */
-function race(array $awaitables): Awaitable
+namespace Concurrent\Stream
 {
-    $race = function (Deferred $defer, $last, $k, $e, $v) {
-        if ($e) {
-            $defer->fail($e);
-        } else {
-            $defer->resolve($v);
+    /**
+     * Read contents of the given stream into a string.
+     * 
+     * @param ReadableStream $stream The stream to be read from.
+     * @param bool $close Close the stream after all data has been read?
+     */
+    function buffer(ReadableStream $stream, bool $close = true): string
+    {
+        $buffer = '';
+
+        try {
+            while (null !== ($chunk = $stream->read())) {
+                $buffer .= $chunk;
+            }
+        } finally {
+            if ($close) {
+                $stream->close();
+            }
         }
-    };
-    
-    return Deferred::combine($awaitables, $race);
+
+        return $buffer;
+    }
+
+    /**
+     * Writa all data from a readable stream into a writable stream.
+     * 
+     * @param ReadableStream $a Stream to be read from.
+     * @param WritableStream $b Stream to be written to.
+     * @param bool $close Close the readable stream after all data has been read?
+     * @return int Number of bytes that have been written.
+     */
+    function pipe(ReadableStream $a, WritableStream $b, bool $close = true): int
+    {
+        $len = 0;
+
+        try {
+            while (null !== ($chunk = $a->read())) {
+                $b->write($chunk);
+
+                $len += \strlen($chunk);
+            }
+        } finally {
+            if ($close) {
+                $a->close();
+            }
+        }
+
+        return $len;
+    }
 }

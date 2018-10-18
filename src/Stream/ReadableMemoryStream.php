@@ -30,6 +30,11 @@ class ReadableMemoryStream implements ReadableStream
     {
         $this->buffer = $buffer;
     }
+    
+    public function isClosed(): bool
+    {
+        return $this->closed !== null;
+    }
 
     /**
      * {@inheritdoc}

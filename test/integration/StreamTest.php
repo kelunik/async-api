@@ -26,6 +26,20 @@ use Concurrent\Timer;
 
 class StreamTest extends AsyncTestCase
 {
+    public function testPipe()
+    {
+        $a = new ReadableMemoryStream($contents = str_repeat('A', 8192 * 128));
+        $b = new WritableMemoryStream();
+
+        $this->assertFalse($a->isClosed());
+
+        $this->assertEquals(strlen($contents), pipe($a, $b));
+
+        $this->assertTrue($a->isClosed());
+        $this->assertFalse($b->isClosed());
+        $this->assertEquals($contents, $b->getContents());
+    }
+    
     public function testTimerBasedWrites()
     {
         $messages = str_split($message = 'Hello Socket :)', 4);

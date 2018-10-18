@@ -21,11 +21,44 @@
 namespace Concurrent\Stream;
 
 use Concurrent\AsyncTestCase;
+use Concurrent\Task;
 use Concurrent\Network\ClientEncryption;
 use Concurrent\Network\TcpSocket;
 
 class SocketTest extends AsyncTestCase
 {
+    public function providePayloads()
+    {
+        yield [100, 3];
+        yield [4096, 2];
+        yield [8192, 10];
+        yield [7000, 100];
+        yield [9000, 100];
+        yield [70000, 5];
+    }
+
+    /**
+     * @dataProvider providePayloads
+     */
+    public function testPair(int $len, int $count)
+    {
+        list ($a, $b) = TcpSocket::pair();
+
+        Task::async(function (TcpSocket $socket) use ($len, $count) {
+            try {
+                $chunk = str_repeat('A', $len);
+
+                for ($i = 0; $i < $count; $i++) {
+                    $socket->write($chunk);
+                }
+            } finally {
+                $socket->close();
+            }
+        }, $a);
+
+        $this->assertEquals(strlen(buffer($b)), $len * $count);
+    }
+    
     public function provideTargets()
     {
         yield [
@@ -80,14 +113,8 @@ class SocketTest extends AsyncTestCase
                 'Host: httpbin.org',
                 'Connection: close'
             ]) . "\r\n\r\n");
-
-            $buffer = '';
             
-            while (null !== ($chunk = $socket->read())) {
-                $buffer .= $chunk;
-            }
-            
-            list ($headers, $data) = \explode("\r\n\r\n", $buffer);
+            list ($headers, $data) = \explode("\r\n\r\n", buffer($socket, false));
             $headers = \explode("\r\n", $headers);
             $line = \array_shift($headers);
             $m = null;
