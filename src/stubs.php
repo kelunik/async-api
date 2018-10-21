@@ -579,6 +579,15 @@ namespace Concurrent\Network
         public function write(string $data): void { }
         
         /**
+         * Enque data to be sent over the network.
+         * 
+         * @param string $data The data to be sent.
+         * @param int $size Maximum number of bytes that are allowed to be queued.
+         * @return bool Will return false when the given send queue size is exceeded.
+         */
+        public function writeAsync(string $data, ?int $size = null): bool { }
+        
+        /**
          * {@inheritdoc}
          */
         public function writeStream(): WritableStream { }
@@ -727,6 +736,15 @@ namespace Concurrent\Network
          * @param UdpDatagram $datagram UDP datagram with payload and remote peer address.
          */
         public function send(UdpDatagram $datagram): void { }
+        
+        /**
+         * Enque the given UDP datagram to be sent over the network.
+         * 
+         * @param UdpDatagram $datagram UDP datagram with payload and remote peer address.
+         * @param int $size Maximum send queue size in bytes.
+         * @return bool Will return false when the given send queue size is exceeded.
+         */
+        public function sendAsync(UdpDatagram $datagram, ?int $size = null): bool { }
     }
     
     /**
