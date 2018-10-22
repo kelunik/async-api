@@ -67,6 +67,33 @@ namespace Concurrent
 namespace Concurrent\Stream
 {
     /**
+     * Reads a fixed length chunk of data from a stream.
+     * 
+     * @param ReadableStream $stream The stream to be read from.
+     * @param int $len The number of bytes to read.
+     * @param bool $enforceLength Throw an exception if less than the given number of bytes were read.
+     * @return string Read bytes (might be less than the given number if length is not enforced or NULL in case of EOF).
+     * 
+     * @throws StreamException When length is enforced and the stream does not provide enough data.
+     */
+    function read(ReadableStream $stream, int $len, bool $enforceLength = true): ?string
+    {
+        $buffer = '';
+        $i = 0;
+
+        while ($i < $len && null !== ($chunk = $stream->read($len - $i))) {
+            $buffer .= $chunk;
+            $i += \strlen($chunk);
+        }
+
+        if ($enforceLength && $i < $len) {
+            throw new StreamException("Failed to read {$len} bytes from stream");
+        }
+
+        return ($buffer === '') ? null : $buffer;
+    }
+    
+    /**
      * Read contents of the given stream into a string.
      * 
      * @param ReadableStream $stream The stream to be read from.

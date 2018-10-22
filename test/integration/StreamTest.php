@@ -26,6 +26,19 @@ use Concurrent\Timer;
 
 class StreamTest extends AsyncTestCase
 {
+    public function testRead()
+    {
+        $a = new ReadableMemoryStream('Hello World');
+
+        $this->assertEquals('Hello Worl', read($a, 10));
+        $this->assertEquals('d', read($a, 2, false));
+        $this->assertNull(read($a, 1, false));
+
+        $this->expectException(StreamException::class);
+
+        read($a, 1);
+    }
+    
     public function testPipe()
     {
         $a = new ReadableMemoryStream($contents = str_repeat('A', 8192 * 128));
