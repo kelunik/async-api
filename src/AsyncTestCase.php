@@ -21,6 +21,7 @@
 namespace Concurrent;
 
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestResult;
 
 /**
  * Base class for tests that make use of async tasks.
@@ -30,12 +31,14 @@ abstract class AsyncTestCase extends TestCase
     /**
      * Run the test method in an isolated task scheduler.
      */
-    protected function runTest()
+    public function run(TestResult $result = null): TestResult
     {
-        return TaskScheduler::run(
-            \Closure::fromCallable('parent::runTest'),
-            \Closure::fromCallable([$this, 'debugPendingAsyncTasks'])
-        );
+        return TaskScheduler::run(\Closure::bind(function () use ($result) {
+            return parent::run($result);
+        }, $this), \Closure::fromCallable([
+            $this,
+            'debugPendingAsyncTasks'
+        ]));
     }
 
     /**
