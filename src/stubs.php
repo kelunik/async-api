@@ -516,6 +516,7 @@ namespace Concurrent\Network
 {
     use Concurrent\Stream\DuplexStream;
     use Concurrent\Stream\ReadableStream;
+    use Concurrent\Stream\StreamException;
     use Concurrent\Stream\WritableStream;
     
     /**
@@ -797,6 +798,11 @@ namespace Concurrent\Network
          */
         public function withPeer(string $address, int $port): UdpDatagram { }
     }
+    
+    /**
+     * Is thrown when a network-related error is encountered.
+     */
+    class SocketException extends StreamException { }
 }
 
 namespace Concurrent\Process
