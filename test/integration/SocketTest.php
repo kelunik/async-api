@@ -22,8 +22,8 @@ namespace Concurrent\Stream;
 
 use Concurrent\AsyncTestCase;
 use Concurrent\Task;
-use Concurrent\Network\ClientEncryption;
 use Concurrent\Network\TcpSocket;
+use Concurrent\Network\TlsClientEncryption;
 
 class SocketTest extends AsyncTestCase
 {
@@ -95,7 +95,7 @@ class SocketTest extends AsyncTestCase
             if ($protocol == 'tcp') {
                 $encryption = null;
             } else {
-                $encryption = new ClientEncryption();
+                $encryption = new TlsClientEncryption();
             }
 
             $socket = TcpSocket::connect($host, $port, $encryption);

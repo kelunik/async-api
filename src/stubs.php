@@ -520,10 +520,89 @@ namespace Concurrent\Network
     use Concurrent\Stream\WritableStream;
     
     /**
+     * Base contract for all sockets.
+     */
+    interface Socket
+    {
+        /**
+         * Close the underlying socket.
+         * 
+         * @param \Throwable $e Reason for close, will be set as previous error.
+         */
+        public function close(?\Throwable $e = null): void;
+
+        /**
+         * Get the local address of the socket.
+         */
+        public function getAddress(): string;
+
+        /**
+         * Get the local network port, or NULL when no port is being used.
+         */
+        public function getPort(): ?int;
+
+        /**
+         * Change the value of a socket option, options are declared as class constants.
+         * 
+         * @param int $option Option to be changed.
+         * @param mixed $value New value to be set.
+         * @return bool Will return false when the option is not supported.
+         */
+        public function setOption(int $option, $value): bool;
+    }
+
+    /**
+     * Contract for a reliable socket-based stream.
+     */
+    interface SocketStream extends Socket, DuplexStream
+    {
+        /**
+         * Get the address of the remote peer.
+         */
+        public function getRemoteAddress(): string;
+
+        /**
+         * Get the network port used by the remote peer (or NULL if not network port is being used).
+         */
+        public function getRemotePort(): ?int;
+
+        /**
+         * Place the given data in the socket's send queue.
+         * 
+         * Implementations may try an immediate write before placeing data in the send queue.
+         * 
+         * @param string $data Data to be sent.
+         * @return int Number of bytes in the socket's send queue.
+         */
+        public function writeAsync(string $data): int;
+    }
+
+    /**
+     * Contract for a server that accepts reliable socket streams.
+     */
+    interface Server extends Socket
+    {
+        /**
+         * Accept the next inbound socket connection.
+         */
+        public function accept(): SocketStream;
+    }
+    
+    /**
      * TCP socket connection.
      */
-    final class TcpSocket implements DuplexStream
+    final class TcpSocket implements SocketStream
     {
+        /**
+         * Disables Nagle's Algorithm when set.
+         */
+        public const NODELAY = 100;
+        
+        /**
+         * Sets the TCP keep-alive timeout in seconds, 0 to disable keep-alive.
+         */
+        public const KEEPALIVE = 101;
+        
         /**
          * Sockets are created using connect() or TcpServer::accept().
          */
@@ -532,7 +611,7 @@ namespace Concurrent\Network
         /**
          * Connect to the given peer (will automatically perform a DNS lookup for host names).
          */
-        public static function connect(string $host, int $port, ?ClientEncryption $encryption = null): TcpSocket { }
+        public static function connect(string $host, int $port, ?TlsClientEncryption $tls = null): TcpSocket { }
         
         /**
          * Returns a pair of connected TCP sockets.
@@ -545,22 +624,32 @@ namespace Concurrent\Network
         public function close(?\Throwable $e = null): void { }
         
         /**
-         * Togle TCP nodelay mode.
+         * {@inheritdoc}
          */
-        public function setNodelay(bool $enable): void { }
+        public function getAddress(): string { }
         
         /**
-         * Get IP address and port of the local peer.
+         * {@inheritdoc}
          */
-        public function getLocalPeer(): array { }
+        public function getPort(): ?int { }
         
         /**
-         * Get IP address and port of the remote peer.
+         * {@inheritdoc}
          */
-        public function getRemotePeer(): array { }
+        public function setOption(int $option, $value): bool { }
         
         /**
-         * Negotiate connection encryption, any further data transfer is encrypted.
+         * {@inheritdoc}
+         */
+        public function getRemoteAddress(): string { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function getRemotePort(): ?int { }
+        
+        /**
+         * Negotiate TLS connection encryption, any further data transfer is encrypted.
          */
         public function encrypt(): void { }
         
@@ -580,13 +669,9 @@ namespace Concurrent\Network
         public function write(string $data): void { }
         
         /**
-         * Enque data to be sent over the network.
-         * 
-         * @param string $data The data to be sent.
-         * @param int $size Maximum number of bytes that are allowed to be queued.
-         * @return bool Will return false when the given send queue size is exceeded.
+         * {@inheritdoc}
          */
-        public function writeAsync(string $data, ?int $size = null): bool { }
+        public function writeAsync(string $data): int { }
         
         /**
          * {@inheritdoc}
@@ -597,8 +682,14 @@ namespace Concurrent\Network
     /**
      * TCP socket server.
      */
-    final class TcpServer
+    final class TcpServer implements Server
     {
+        /**
+         * Enable / disable simultaneous asynchronous accept requests that are queued by the operating system
+         * when listening for new TCP connections.
+         */
+        public const SIMULTANEOUS_ACCEPTS = 150;
+        
         /**
          * Servers are created using listen().
          */
@@ -607,61 +698,59 @@ namespace Concurrent\Network
         /**
          * Create a TCP server listening on the given interface and port.
          */
-        public static function listen(string $host, int $port, ?ServerEncryption $encryption = null): TcpServer { }
+        public static function listen(string $host, int $port, ?TlsServerEncryption $tls = null): TcpServer { }
         
         /**
-         * Dispose of the server.
-         * 
-         * @param \Throwable $e Reason for close.
+         * {@inheritdoc}
          */
         public function close(?\Throwable $e = null): void { }
         
         /**
-         * Get the host as specified during server creation.
+         * {@inheritdoc}
          */
-        public function getHost(): string { }
+        public function getAddress(): string { }
         
         /**
-         * Get the port as specified during server creation.
+         * {@inheritdoc}
          */
-        public function getPort(): int { }
+        public function getPort(): ?int { }
         
         /**
-         * Get IP address and port of the local server socket.
+         * {@inheritdoc}
          */
-        public function getPeer(): array { }
+        public function setOption(int $option, $value): bool { }
         
         /**
-         * Accept the next incoming client connection.
+         * {@inheritdoc}
          */
-        public function accept(): TcpSocket { }
+        public function accept(): SocketStream { }
     }
     
     /**
      * Socket client encryption settings.
      */
-    final class ClientEncryption
+    final class TlsClientEncryption
     {
         /**
          * Allow connecting to hosts that have a self-signed X509 certificate.
          */
-        public function withAllowSelfSigned(bool $allow): ClientEncryption { }
+        public function withAllowSelfSigned(bool $allow): TlsClientEncryption { }
         
         /**
          * Restrict the maximum certificate validation chain to the given length.
          */
-        public function withVerifyDepth(int $depth): ClientEncryption { }
+        public function withVerifyDepth(int $depth): TlsClientEncryption { }
         
         /**
          * Set peer name to connect to.
          */
-        public function withPeerName(string $name): ClientEncryption { }
+        public function withPeerName(string $name): TlsClientEncryption { }
     }
     
     /**
      * Socket server encryption settings.
      */
-    final class ServerEncryption
+    final class TlsServerEncryption
     {
         /**
          * Configure the default X509 certificate to be used by the server.
@@ -670,7 +759,7 @@ namespace Concurrent\Network
          * @param string $key Path to the secret key file.
          * @param string $passphrase Passphrase being used to access the secret key.
          */
-        public function withDefaultCertificate(string $cert, string $key, ?string $passphrase = null): ServerEncryption { }
+        public function withDefaultCertificate(string $cert, string $key, ?string $passphrase = null): TlsServerEncryption { }
         
         /**
          * Configure a host-based X509 certificate to be used by the server.
@@ -680,14 +769,29 @@ namespace Concurrent\Network
          * @param string $key Path to the secret key file.
          * @param string $passphrase Passphrase being used to access the secret key.
          */
-        public function withCertificate(string $host, string $cert, string $key, ?string $passphrase = null): ServerEncryption { }
+        public function withCertificate(string $host, string $cert, string $key, ?string $passphrase = null): TlsServerEncryption { }
     }
     
     /**
      * UDP socket API.
      */
-    final class UdpSocket
+    final class UdpSocket implements Socket
     {
+        /**
+         * Sets the maximum number of packet forwarding operations performed by routers.
+         */
+        public const TTL = 200;
+
+        /**
+         * Set to true to have multicast packets loop back to local sockets.
+         */
+        public const MULTICAST_LOOP = 250;
+
+        /**
+         * Sets the maximum number of packet forwarding operations performed by routers for multicast packets.
+         */
+        public const MULTICAST_TTL = 251;
+        
         /**
          * Bind a UDP socket to the given local peer.
          * 
@@ -705,26 +809,24 @@ namespace Concurrent\Network
         public static function multicast(string $group, int $port): UdpSocket { }
         
         /**
-         * Close the UDP socket.
-         * 
-         * @param \Throwable $e Reason for close.
+         * {@inheritdoc}
          */
         public function close(?\Throwable $e = null): void { }
         
         /**
-         * Get the local IP address being used by the UDP socket.
+         * {@inheritdoc}
          */
-        public function getHost(): string { }
+        public function getAddress(): string { }
         
         /**
-         * Get the local port being used by the UDP socket.
+         * {@inheritdoc}
          */
-        public function getPort(): int { }
-
+        public function getPort(): ?int { }
+        
         /**
-         * Get an array containing local IP address and port of the UDP socket.
+         * {@inheritdoc}
          */
-        public function getPeer(): array { }
+        public function setOption(int $option, $value): bool { }
         
         /**
          * Receive the next UDP datagram from the socket.
@@ -741,11 +843,12 @@ namespace Concurrent\Network
         /**
          * Enque the given UDP datagram to be sent over the network.
          * 
+         * The datagram will only be enqueued if it cannot be sent immediately.
+         * 
          * @param UdpDatagram $datagram UDP datagram with payload and remote peer address.
-         * @param int $size Maximum send queue size in bytes.
-         * @return bool Will return false when the given send queue size is exceeded.
+         * @return int Number of bytes in the socket's send queue.
          */
-        public function sendAsync(UdpDatagram $datagram, ?int $size = null): bool { }
+        public function sendAsync(UdpDatagram $datagram): int { }
     }
     
     /**
