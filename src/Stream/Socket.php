@@ -100,7 +100,7 @@ class Socket implements DuplexStream
                 }
                 
                 if (false === \filter_var($host, \FILTER_VALIDATE_IP)) {
-                    $host = \Concurrent\gethostbyname($host);
+                    $host = \gethostbyname($host);
                 }
                 
                 if ($protocol == 'tls') {
