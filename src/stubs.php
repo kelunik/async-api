@@ -568,6 +568,13 @@ namespace Concurrent\Network
          * @return int Number of bytes in the socket's send queue.
          */
         public function writeAsync(string $data): int;
+        
+        /**
+         * Get the number of bytes queued for send.
+         * 
+         * @return int Number of bytes in the socket's send queue.
+         */
+        public function getWriteQueueSize(): int;
     }
 
     /**
@@ -665,6 +672,11 @@ namespace Concurrent\Network
          * {@inheritdoc}
          */
         public function writeAsync(string $data): int { }
+        
+        /**
+         * {@inheritdoc}
+         */
+        public function getWriteQueueSize(): int { }
         
         /**
          * {@inheritdoc}
