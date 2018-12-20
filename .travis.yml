@@ -9,7 +9,7 @@ cache:
 matrix:
   fast_finish: true
   include:
-    - php: nightly
+    - php: 7.3
 
 install:
   - bash ./travis/async.sh
