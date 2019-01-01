@@ -449,7 +449,7 @@ namespace Concurrent\Stream
          * @param int $length Maximum number of bytes to be read (might return fewer bytes).
          * @return string|NULL Next chunk of data or null if EOF is reached.
          * 
-         * @throws StreamClosedException When the stream ahs been closed before or during the read operation.
+         * @throws StreamClosedException When the stream has been closed before or during the read operation.
          * @throws PendingReadException When another read has not completed yet.
          */
         public function read(?int $length = null): ?string;
@@ -469,6 +469,8 @@ namespace Concurrent\Stream
 
         /**
          * Write a chunk of data to the stream.
+         *
+         * @throws StreamClosedException When the stream has been closed before or during the write operation.
          */
         public function write(string $data): void;
     }
